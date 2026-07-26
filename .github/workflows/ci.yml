@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e .[dev]
+      - name: Fast tests
+        run: pytest -q
+      - name: Full production-grid validation (slow, main/dispatch only)
+        if: github.event_name != 'pull_request'
+        run: pytest --runslow -q
+
+  dispatch:
+    name: Notify PolicyEngine Macro (MacroMod)
+    # Same pattern as PolicyEngine/obr-macroeconomic-model's
+    # notify-macromod.yml (which dispatches to PolicyEngine/macro).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger MacroMod redeploy
+        run: |
+          curl -sf -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.MACROMOD_DISPATCH_TOKEN }}" \
+            https://api.github.com/repos/PolicyEngine/macro/dispatches \
+            -d '{"event_type":"model-updated","client_payload":{"repo":"us-hank-model","sha":"${{ github.sha }}"}}'
