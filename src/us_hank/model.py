@@ -42,6 +42,42 @@ SHOCK_KINDS = {
     'productivity': 'Z',
 }
 
+# ``size`` in shock() is ALWAYS a level change in the driving variable, never
+# a percentage. That reads naturally for two of the three kinds and is a trap
+# for the third, so state it once here and let callers introspect rather than
+# hard-coding a units string of their own:
+#
+#   monetary        rstar_ss = 0.0125. A level change in the quarterly policy
+#                   rate: size=-0.0025 is a 25bp-per-quarter easing. Natural.
+#   fiscal_spending G_ss = 0.2, and Y_ss = 1, so a level change in G is also a
+#                   share of quarterly GDP: size=0.01 is 1% of GDP. Natural --
+#                   but note it is a 5% increase in G itself.
+#   productivity    Z_ss = 0.4678, NOT 1. A level change in Z is therefore NOT
+#                   a percentage TFP change: size=0.01 is a 2.14% TFP
+#                   improvement, not 1%. Use ``size_pct_of_ss`` below, or read
+#                   ``shock_pct_of_ss`` off the result, before quoting a
+#                   productivity shock as "an x% TFP shock".
+SHOCK_UNITS = {
+    'monetary': {
+        'input': 'rstar',
+        'units': 'level change in the quarterly real policy rate '
+                 '(-0.0025 = 25bp per quarter easing on impact)',
+        'level_equals_pct_of_ss': False,
+    },
+    'fiscal_spending': {
+        'input': 'G',
+        'units': 'level change in real government spending; steady-state '
+                 'Y = 1, so 0.01 = 1% of quarterly GDP (= a 5% rise in G)',
+        'level_equals_pct_of_ss': False,
+    },
+    'productivity': {
+        'input': 'Z',
+        'units': 'level change in TFP around Z_ss = 0.468; a level change is '
+                 'NOT a percent change -- 0.01 is a 2.14% TFP improvement',
+        'level_equals_pct_of_ss': False,
+    },
+}
+
 _CACHE: dict = {}
 
 
@@ -75,8 +111,11 @@ def solve_steady_state(use_cache: bool = True):
     if use_cache and 'ss' in _CACHE:
         return _CACHE['ss']
     ss_model, model = build_models()
+    # Pass a copy: the calibration dict is module-level shared state, and the
+    # solver adds its solved unknowns to what it is given. Handing over the
+    # original would let the first solve seed every later one.
     cali = ss_model.solve_steady_state(
-        PRODUCTION_CALIBRATION,
+        dict(PRODUCTION_CALIBRATION),
         unknowns={'beta': 0.976, 'chi1': 6.5},
         targets={'asset_mkt': 0., 'B': 'Bh'},
         solver='broyden_custom')
@@ -86,14 +125,20 @@ def solve_steady_state(use_cache: bool = True):
 
 
 def solve_jacobian(ss, T: int = 300, use_cache: bool = True):
-    """Solve the T x T general-equilibrium Jacobian around ``ss`` (cached by (id(ss), T))."""
+    """Solve the T x T general-equilibrium Jacobian around ``ss``.
+
+    Cached on ``(id(ss), T)``. The cache entry keeps a reference to ``ss``
+    itself: without it the steady state could be garbage collected, its
+    address reused by a *different* steady state, and that second object
+    silently handed the first one's Jacobian.
+    """
     key = ('jac', id(ss), T)
     if use_cache and key in _CACHE:
-        return _CACHE[key]
+        return _CACHE[key][1]
     _, model = build_models()
     G = model.solve_jacobian(ss, UNKNOWNS, TARGETS, EXOGENOUS, T=T)
     if use_cache:
-        _CACHE[key] = G
+        _CACHE[key] = (ss, G)
     return G
 
 
@@ -101,14 +146,34 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
           ss=None, G_jac=None) -> dict:
     """Linear IRFs to an AR(1) shock ``size * persistence**t``.
 
-    kind: 'monetary' (rstar, size in levels, e.g. -0.0025 = -25bp quarterly
-    easing), 'fiscal_spending' (G, size in levels of G, e.g. 0.01 = 1% of
-    ss Y since Y=1), or 'productivity' (Z). There is no exogenous transfer or
-    tax-rate instrument in this DAG (see module docstring).
+    ``size`` is a LEVEL change in the driving variable for every kind -- see
+    ``SHOCK_UNITS``, and mind that a level change in Z is not a percent change
+    in TFP (Z_ss = 0.468, so size=0.01 is a 2.14% TFP shock). The returned
+    ``shock_pct_of_ss`` states the shock as a percentage of the driving
+    variable's steady state so the reading is never left to the caller.
 
-    Returns dict with 'Y', 'C', 'I' as % deviations from steady state,
-    'pi', 'r' as level (quarterly rate) deviations in percentage points,
-    'shock' (the exogenous path in levels), and 'shock_input' (variable name).
+    kind: 'monetary' (rstar), 'fiscal_spending' (G) or 'productivity' (Z).
+    There is no exogenous transfer or tax-rate instrument in this DAG (see
+    the module docstring).
+
+    Responses are first-order: the IRF is a matrix-vector product against a
+    fixed Jacobian, so it scales EXACTLY with ``size`` and carries no
+    state-dependence or asymmetry. Doubling ``size`` doubles every response;
+    that is a property of the method, not a finding about the economy.
+
+    Returns a dict with:
+      'Y', 'C', 'I'   % deviations from steady state
+      'pi', 'r'       level deviations of QUARTERLY rates, percentage points
+      'tax'           labour tax rate, level deviation in percentage points.
+                      Included because it is the financing: this DAG has a
+                      fixed bond supply Bg, so a G shock is paid for by this
+                      tax path, period by period, with no deficit. Reading a
+                      spending IRF without it invites a deficit-financed
+                      interpretation the model cannot produce.
+      'shock'         the exogenous path in levels
+      'shock_input'   name of the driving variable
+      'shock_pct_of_ss'  the same path as % of that variable's steady state
+      'units'         human-readable units string for ``size``
     """
     if kind not in SHOCK_KINDS:
         raise ValueError(f"unknown shock kind {kind!r}; available: "
@@ -120,9 +185,14 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
         G_jac = solve_jacobian(ss, T=T)
     inp = SHOCK_KINDS[kind]
     dx = size * persistence ** np.arange(T)
-    out = {'shock': dx, 'shock_input': inp}
+    out = {
+        'shock': dx,
+        'shock_input': inp,
+        'shock_pct_of_ss': 100 * dx / float(ss[inp]),
+        'units': SHOCK_UNITS[kind]['units'],
+    }
     for v in ('Y', 'C', 'I'):
         out[v] = 100 * (G_jac[v][inp] @ dx) / ss[v]
-    for v in ('pi', 'r'):
+    for v in ('pi', 'r', 'tax'):
         out[v] = 100 * (G_jac[v][inp] @ dx)
     return out

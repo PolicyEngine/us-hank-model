@@ -81,6 +81,11 @@ def fiscal_paths(
         debt[t] = debt_persistence * lagged_debt[t] + financing_need[t]
 
     tax_revenue = spending + (1 + quarterly_real_rate) * lagged_debt - debt
+    # NOTE: budget_residual is an ARITHMETIC IDENTITY, not a validation. It is
+    # zero by construction because tax_revenue is defined as exactly this
+    # expression rearranged, so it can only ever catch a floating-point or
+    # refactoring slip -- never a modelling error. Do not read the test that
+    # asserts it is ~0 as evidence that the paths are right.
     budget_residual = (
         spending
         + (1 + quarterly_real_rate) * lagged_debt
