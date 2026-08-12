@@ -10,11 +10,17 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [{ name = "PolicyEngine" }]
+# sequence-jacobian is pinned exactly: the replication asserts published
+# parameter values to 4 decimals, so the solver version is part of the result.
+# The numeric stack carries major-version ceilings for the same reason — a
+# silent NumPy/SciPy major bump must not be able to move those digits without
+# anyone choosing it. test_internally_calibrated_parameters_match_published_table
+# is the backstop that makes such a move fail loudly rather than quietly.
 dependencies = [
     "sequence-jacobian==1.0.0",
-    "numpy>=1.24",
-    "scipy>=1.10",
-    "numba>=0.57",
+    "numpy>=1.24,<3",
+    "scipy>=1.10,<2",
+    "numba>=0.57,<1",
 ]
 
 [project.optional-dependencies]

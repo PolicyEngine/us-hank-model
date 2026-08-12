@@ -15,15 +15,56 @@ def test_calibration_targets(ss):
 
 
 def test_wealth_targets(ss):
-    # total wealth 14 (3.5x annual GDP), liquid B = 1.04 (0.26x annual GDP)
+    # total wealth 14 (3.5x annual GDP), liquid B = 1.04 (0.26x annual GDP),
+    # so illiquid A = 12.96; equity p = tot_wealth - Bg = 11.2.
     assert abs(ss['A'] + ss['B'] - 14.0) < 1e-6
     assert abs(ss['B'] - 1.04) < 1e-6
+    assert abs(ss['A'] - 12.96) < 1e-6
+    assert abs(ss['p'] - 11.2) < 1e-6
     assert abs(ss['asset_mkt']) < 1e-6
 
 
 def test_beta_production_grids(ss):
     # paper full-grid discount factor ~0.976 (coarse demo grids give ~0.9726)
     assert abs(ss['beta'] - 0.976) < 2e-3
+
+
+def test_internally_calibrated_parameters_match_published_table(ss):
+    """The real external check: ABRS (2021) Table B.III.
+
+    Y, K, r, G, Bg and total wealth are calibration INPUTS -- they are hit by
+    construction and prove nothing. These seven are the parameters the model
+    solves for internally (beta and chi1 numerically, the rest analytically),
+    so they are the only steady-state numbers with independent published
+    values to miss.
+
+    vphi is deliberately absent: the published table reports 2.073, this DAG's
+    union block yields 1.7135, and the gap is unresolved (see README). It is a
+    normalisation internal to the wage Phillips curve -- this implementation
+    is self-consistent (wnkpc = 0 at the steady state) and no asset or wealth
+    target depends on it -- but it is not asserted here, because asserting a
+    value we cannot reconcile with the paper would launder the discrepancy.
+    """
+    published = {'beta': 0.976, 'chi1': 6.416, 'Z': 0.468, 'alpha': 0.33,
+                 'mup': 1.015, 'tax': 0.356}
+    for name, target in published.items():
+        # the table is printed to 3-4 significant figures; require agreement
+        # to the last published digit
+        assert abs(ss[name] - target) < 5e-4, (name, ss[name], target)
+
+
+def test_market_clearing_residual_magnitudes(ss):
+    """Pin the residuals, not just their existence.
+
+    asset_mkt is a solver target so it clears to machine precision. goods_mkt
+    is UNTARGETED -- it holds only by Walras' law, so its residual is the
+    honest measure of steady-state accuracy and is ~1e-8, five orders looser
+    than the asset market. Quoting one for the other would overstate this.
+    """
+    assert abs(ss['asset_mkt']) < 1e-11
+    assert abs(ss['goods_mkt']) < 1e-6
+    assert abs(ss['fisher']) < 1e-11
+    assert abs(ss['wnkpc']) < 1e-11
 
 
 def test_goods_market_clears(ss):
