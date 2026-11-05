@@ -37,9 +37,13 @@ import numpy as np
 DEFAULT_HTM_THRESHOLD = 0.05
 
 # Windfall used to define MPCs, as a fraction of mean quarterly post-tax
-# labour income. 0.25 is about a $1,000-1,500 rebate against US median
-# household income -- the scale of the 2001/2008 US tax rebates that the
-# empirical MPC literature actually measures.
+# labour income. 0.25 is 0.106 in model units (10.6% of quarterly GDP per
+# model household). Mapped to US GDP per head or per household that is
+# several thousand dollars -- LARGER than the 2001 ($300-600) and 2008
+# (about $900 on average) rebates the empirical MPC literature measures, so
+# with a concave policy the MPC here is biased down against that literature.
+# Changing the default changes the reported 0.058; that is a decision, not a
+# docs fix.
 DEFAULT_WINDFALL_FRAC = 0.25
 
 

@@ -94,10 +94,12 @@ shock" is wrong by more than a factor of two.
 
 Bond supply `Bg` is a fixed scalar — it is neither an input nor an output of
 the GE Jacobian, so **no deficit channel exists in this DAG**. The labour tax
-does all the financing, and `tax*w*N = r*Bg + G` holds period by period (to
-1e-18 along the IRF, gated by a test). Every IRF therefore returns `tax`, the
+does all the financing, and `tax*w*N = r*Bg + G` holds period by period (gated
+by a test at 1e-12 along the IRF). Every IRF therefore returns `tax`, the
 labour-tax-rate path in percentage points: a 1%-of-GDP spending shock raises
-the tax rate by 0.51pp on impact. The resulting impact multiplier (~0.18) is a
+the tax rate by 0.51pp on impact (the 0.51pp and the ~0.18 below are
+not pinned by any test; the test only bounds the multiplier in (0, 0.5)).
+The resulting impact multiplier (~0.18) is a
 **balanced-budget** multiplier under an active Taylor rule, and must not be
 compared with deficit-financed multipliers.
 
@@ -172,9 +174,14 @@ one-grid-step MPC rises monotonically 0.076 → 0.100 as nB goes 50 → 150 with
 no plateau, because its implied windfall is set by grid spacing rather than by
 economics. MPCs are therefore measured out of an **explicit windfall** of
 stated economic size (default: 25% of mean quarterly post-tax labour income,
-about a $1,000–1,500 rebate), giving an aggregate quarterly MPC of **0.058**.
-Either way this sits below the US empirical range of roughly **0.15–0.25** for
-a quarterly MPC out of a rebate. Quote the number with its windfall size, or
+which is 0.106 in model units, i.e. 10.6% of quarterly GDP per model
+household), giving an aggregate quarterly MPC of **0.058**. Mapped to US
+GDP per head or per household that windfall is several thousand dollars —
+larger than the 2001 ($300–600) and 2008 (about $900 on average) rebates
+the empirical MPC literature measures. Because MPCs fall with windfall size
+(the policy is concave, and a test asserts it), part of the gap to the US
+empirical range of roughly **0.15–0.25** for a quarterly MPC out of a
+rebate comes from that size mismatch, not from the model alone. Quote the number with its windfall size, or
 not at all — `summary()` always ships both.
 
 **MPC by liquid quartile: Q1 and Q2 are identical by design.** Both quartile
