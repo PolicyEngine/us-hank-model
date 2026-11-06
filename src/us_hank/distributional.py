@@ -41,10 +41,13 @@ DEFAULT_HTM_THRESHOLD = 0.05
 # model household). Mapped to US GDP (about $31T a year, 2026) that is about
 # $2,400 per head (342M people) or about $6,200 per household (133M
 # households) -- LARGER than the 2001 ($300-600) and 2008 (about $900 on
-# average) rebates the empirical MPC literature measures, so
-# with a concave policy the MPC here is biased down against that literature.
-# Changing the default changes the reported 0.058; that is a decision, not a
-# docs fix.
+# average) rebates the empirical MPC literature measures. With a concave
+# policy that biases the MPC down, but only slightly: at $1,000-1,500 per
+# head it is 0.069-0.064 (vs 0.058), and per household such a rebate is
+# below the first liquid grid step, where the arc MPC is the grid-step slope
+# (0.075 at nB=50, not grid-converged). 0.25 is kept because it is above that
+# grid step and so measures economics rather than grid spacing; see
+# test_rebate_scale_mpc_is_still_far_below_the_empirical_range.
 DEFAULT_WINDFALL_FRAC = 0.25
 
 
