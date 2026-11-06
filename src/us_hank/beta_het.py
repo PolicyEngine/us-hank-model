@@ -156,15 +156,21 @@ HTM_CUTOFF = 0.05
 #: beta distribution of half-width ``beta_spread`` around the centre ``beta``
 #: (Carroll, Slacalek, Tokuoka & White 2017), ``chi1`` set outside the solve.
 #: (beta_spread, chi1) were chosen on a grid (CI runs 42149673949,
-#: 42150101068, 42150572003, 42150783547) to fit the two medians with every
-#: type inside or near the Carroll et al. liquid-wealth range
-#: (0.936-0.978/quarter). Fits, refined grid: median liquid 0.205 (target
-#: 0.199), median illiquid 4.69 (4.14), poor HtM 0.060 (0.12), MPC out of
-#: $500 0.126 (0.15-0.25). The last two MISS, and cannot be reached: a wider
-#: spread (0.034) or a fourth, more impatient type at 12-15% mass leaves no
-#: centre beta that clears the asset market at A + B = 14 with the most
-#: patient type below 1 / (1 + r). The most patient type sits at that cap
-#: here (0.9875 vs 0.98765). chi0 in 0.02-0.25 moves poor HtM by under 1pp.
+#: 42150101068, 42150572003, 42150783547) to fit the two medians. The beta
+#: points are NOT inside the Carroll et al. liquid-wealth range
+#: (0.936-0.978/quarter): the top point 0.9875 is above it, and the uniform
+#: support is 0.932-0.998; the top type's beta * (1 + r) is 0.9998. Fits,
+#: refined grid: median liquid 0.205 (target 0.199), median illiquid 4.69
+#: (4.14), poor HtM 0.060 (0.12), wealthy HtM 0.39 (0.19), MPC out of $500
+#: 0.126 (0.15-0.25; ~0.10 at the KV-comparable $1,460, see README). Poor
+#: HtM and the MPC MISS. With A + B = 14 kept, a wider spread (0.034) or a
+#: fourth, more impatient type at 12-15% mass gave no root for the centre
+#: beta inside ``beta_bracket`` (most patient type >= 1e-4 below
+#: 1 / (1 + r)). That is a bracket result, not proof that no steady state
+#: exists (types are redrawn, so a top beta at the cap need not explode),
+#: and dropping the total wealth target was not tried. Knife-edge: the most
+#: patient type is 2e-4 below the cap (0.98745 vs 0.98765) and holds 73% of
+#: illiquid wealth. chi0 in 0.02-0.25 moves poor HtM by under 1pp.
 MEDIAN_CALIBRATION = {
     **_model.PRODUCTION_CALIBRATION,
     'beta_offsets': (-2 / 3, 0.0, 2 / 3),
@@ -314,7 +320,9 @@ def solve_steady_state(beta_spread: float | None = None,
     at total wealth 14 and liquid wealth B = Bh = 1.04.
 
     ``liquid_target='median'`` (``MEDIAN_CALIBRATION``): drops the aggregate
-    liquid-wealth target, as Kaplan & Violante (2014, fn. 28) do. ``chi1`` is
+    liquid-wealth target and targets medians, in the spirit of Kaplan &
+    Violante (2014, fn. 28), but keeps total wealth 14 (KV drop the aggregate
+    wealth target altogether). ``chi1`` is
     then a parameter (set outside the solve, with the beta spread, to the
     median-wealth targets), ``beta`` alone clears the asset market, and
     ``Bh`` is reset to the household liquid wealth the solve produces, so the

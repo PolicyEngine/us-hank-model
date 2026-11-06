@@ -203,7 +203,11 @@ $1,000 MPC 0.200 → 0.207.
 
 The first calibration keeps the aggregate targets (total wealth 14, liquid
 B 1.04), and that forces the low impatient β. Kaplan & Violante (2014,
-fn. 28) target median wealth instead. The second calibration does that:
+fn. 28) target median wealth instead of aggregate wealth. The second
+calibration targets the medians but keeps ABRS's total wealth 14 (about 21
+quarters of mean labour income, against a mean net worth of 11.4 quarters
+in KV's 2001 SCF sample, which excludes the top 5%), so it is a hybrid of
+the two approaches, closer to Carroll et al. (2017) than to KV:
 
 ```python
 ss_m = beta_het.solve_steady_state(liquid_target='median')
@@ -231,15 +235,31 @@ Violante & Weidner 2014, Table 3). The MPC band out of $500 is 0.15–0.25
 | Monetary −25bp/q: impact Y / C / I (%) | 0.493 / 0.300 / 1.698 | 0.244 / 0.308 / 0.478 | 0.360 / 0.240 / 1.191 | |
 
 The moments are measured on the refined liquid grid, with the hand-to-mouth
-shares using the 0.05 (about $1,000) cutoff. With every β inside or near the
-Carroll et al. range, both medians come close. Poor hand-to-mouth (6%) and
-the MPC (0.126) stay below their targets. They cannot be pushed further in
-this model. A wider spread, or a fourth, impatient type with 12–15% of
-households, leaves no centre β that clears the asset market at A + B = 14
-with the most patient type below 1/(1+r), and that type already sits at the
-cap. χ0 between 0.02 and 0.25 moves poor hand-to-mouth by under 1 point. The
-spending-multiplier sign result survives: output stays positive for 40
-quarters at ρ 0.8 and 0.9 without the extreme impatient type.
+shares using the 0.05 (about $1,000) cutoff. Both medians come close
+(illiquid 13% high). The β points are not inside the Carroll et al. range:
+the top point, 0.9875, is above 0.978, and the uniform distribution they
+discretise runs from 0.932 to 0.998 (Carroll et al.: 0.936–0.978). β levels
+are not comparable across models with different returns either; the top
+type's β(1 + r) is 0.9998. Poor hand-to-mouth (6%, half the data) and the
+MPC (0.126) stay below their targets, and wealthy hand-to-mouth (39%) is
+twice the data (19.2%). With total wealth held at 14 they could not be
+pushed further: a wider spread (0.034), or a fourth, impatient type with
+12–15% of households, gave no root for the centre β in the solver's
+bracket, which keeps the most patient type at least 1e-4 below 1/(1+r).
+That is a property of the bracket, not a proof that no steady state exists:
+with types redrawn every 200 quarters on average, a top β at or slightly
+above 1/(1+r) need not be explosive, and dropping the total wealth target,
+as KV do, was not tried. The fit is knife-edge: spread 0.033 solves and
+0.034 does not, with the top type 2e-4 below the cap holding 73% of
+illiquid wealth. The MPC is quoted per household at 2025 GDP per household
+($58,000 a quarter); KV's $500 in 2001 is 3.8% of quarterly earnings, which
+here is about $1,460, where the MPC is about 0.10. χ0 between 0.02 and
+0.25 moves poor hand-to-mouth by under 1 point. The spending-multiplier
+sign result survives: output stays positive for 40 quarters at ρ 0.8 and
+0.9 without the extreme impatient type. The $500 MPC rises only from 0.104
+to 0.126, so the average MPC alone does not explain the sign change; the
+rest comes from the wealth distribution (not decomposed here). This
+calibration is a median-wealth sensitivity, not a higher-MPC one.
 
 ## Quickstart
 
