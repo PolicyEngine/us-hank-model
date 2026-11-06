@@ -1,8 +1,10 @@
 # us-hank-model
 
-US two-asset HANK model — a **validated replication** of Auclert, Bardóczy,
+US two-asset HANK model — a **calibrated replication** of Auclert, Bardóczy,
 Rognlie & Straub, *"Using the Sequence-Space Jacobian to Solve and Estimate
-Heterogeneous-Agent Models"* (Econometrica, 2021) — packaged for
+Heterogeneous-Agent Models"* (Econometrica, 2021): six of the seven solved
+steady-state parameters match the paper, and impulse-response magnitudes are
+not validated (see below) — packaged for
 PolicyEngine MacroMod. Built on the authors' MIT-licensed
 [sequence-jacobian](https://github.com/shade-econ/sequence-jacobian) toolkit
 (pinned at 1.0.0), with the model solved at the paper's production grid sizes
@@ -10,8 +12,9 @@ PolicyEngine MacroMod. Built on the authors' MIT-licensed
 
 ## Validation status
 
-**What is genuinely validated.** The parameters the model solves for
-internally reproduce ABRS (2021) Table B.III to the last published digit:
+**What is genuinely validated.** Six of the seven parameters the model
+solves for internally reproduce ABRS (2021) Table B.III to the last published
+digit; the seventh, φ, is 17% off (below):
 
 | Parameter | Published | Solved here | Deviation |
 |---|---|---|---|
@@ -81,7 +84,7 @@ three read naturally; the third is a trap:
 
 | kind | drives | ss level | `size=0.01` means |
 |---|---|---|---|
-| `monetary` | `rstar` | 0.0125 | +100bp per quarter |
+| `monetary` | `rstar` | 0.0125 | +100bp per quarter, about +400bp annualised (25bp annualised is `0.000625`) |
 | `fiscal_spending` | `G` | 0.2 | 1% of quarterly GDP (Y=1), i.e. a 5% rise in G |
 | `productivity` | `Z` | **0.468** | a **2.14%** TFP improvement — *not* 1% |
 
@@ -94,12 +97,24 @@ shock" is wrong by more than a factor of two.
 
 Bond supply `Bg` is a fixed scalar — it is neither an input nor an output of
 the GE Jacobian, so **no deficit channel exists in this DAG**. The labour tax
-does all the financing, and `tax*w*N = r*Bg + G` holds period by period (to
-1e-18 along the IRF, gated by a test). Every IRF therefore returns `tax`, the
-labour-tax-rate path in percentage points: a 1%-of-GDP spending shock raises
-the tax rate by 0.51pp on impact. The resulting impact multiplier (~0.18) is a
+does all the financing, and `tax*w*N = r*Bg + G` holds period by period (gated
+by a test at 1e-12 along the IRF). Every IRF therefore returns `tax`, the
+labour-tax-rate path in percentage points: a 1%-of-GDP spending shock
+(persistence 0.8) raises the tax rate by 0.51pp on impact and by 1.59pp in
+quarter 1. The impact rise is small because the ex-post real rate falls 0.21pp
+on the inflation surprise, which cuts debt service `r*Bg` by 0.59% of GDP;
+from quarter 1 the real rate is above steady state and the tax does the full
+work. The resulting impact multiplier (0.175) is a
 **balanced-budget** multiplier under an active Taylor rule, and must not be
 compared with deficit-financed multipliers.
+
+The multiplier depends strongly on persistence, and output turns negative
+from quarter 3 while G is still raised: the labour tax stays 1–1.6pp higher
+and investment is crowded out. At rho 0.8 the impact multiplier is 0.175 and
+the cumulative multiplier over 20 quarters is −0.015. At rho 0.9 (PolicyEngine
+Macro's hosted default) they are 0.075 and −0.032. No published IRF for this
+calibration gates these numbers; `tests/test_scenarios.py` pins them as
+regression values only.
 
 ## Fiscal 2025 variant
 
@@ -172,9 +187,18 @@ one-grid-step MPC rises monotonically 0.076 → 0.100 as nB goes 50 → 150 with
 no plateau, because its implied windfall is set by grid spacing rather than by
 economics. MPCs are therefore measured out of an **explicit windfall** of
 stated economic size (default: 25% of mean quarterly post-tax labour income,
-about a $1,000–1,500 rebate), giving an aggregate quarterly MPC of **0.058**.
-Either way this sits below the US empirical range of roughly **0.15–0.25** for
-a quarterly MPC out of a rebate. Quote the number with its windfall size, or
+which is 0.106 in model units, i.e. 10.6% of quarterly GDP per model
+household), giving an aggregate quarterly MPC of **0.058**. Mapped to US
+GDP (about $31T a year) that windfall is about $2,400 per head or about
+$6,200 per household —
+larger than the 2001 ($300–600) and 2008 (about $900 on average) rebates
+the empirical MPC literature measures. MPCs fall with windfall size (the
+policy is concave, and a test asserts it), but the size mismatch explains
+little of the gap to the US empirical range of roughly **0.15–0.25**: at a
+$1,000–1,500 rebate per head the MPC is 0.069–0.064, and per household that
+rebate is smaller than the first liquid grid step, where the MPC is a flat
+0.075 set by the grid (the grid-step MPC). The model's MPC is low at every
+rebate size; `tests/test_distributional.py` pins these numbers. Quote the number with its windfall size, or
 not at all — `summary()` always ships both.
 
 **MPC by liquid quartile: Q1 and Q2 are identical by design.** Both quartile

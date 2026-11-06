@@ -47,8 +47,10 @@ SHOCK_KINDS = {
 # for the third, so state it once here and let callers introspect rather than
 # hard-coding a units string of their own:
 #
-#   monetary        rstar_ss = 0.0125. A level change in the quarterly policy
-#                   rate: size=-0.0025 is a 25bp-per-quarter easing. Natural.
+#   monetary        rstar_ss = 0.0125. A level change in the QUARTERLY policy
+#                   rate: size=-0.0025 is a 25bp-per-quarter easing, i.e.
+#                   about 100bp annualised. A 25bp annualised move, the usual
+#                   central-bank step, is size=-0.000625.
 #   fiscal_spending G_ss = 0.2, and Y_ss = 1, so a level change in G is also a
 #                   share of quarterly GDP: size=0.01 is 1% of GDP. Natural --
 #                   but note it is a 5% increase in G itself.
@@ -61,7 +63,8 @@ SHOCK_UNITS = {
     'monetary': {
         'input': 'rstar',
         'units': 'level change in the quarterly real policy rate '
-                 '(-0.0025 = 25bp per quarter easing on impact)',
+                 '(-0.0025 = 25bp per quarter easing on impact, about '
+                 '100bp annualised; -0.000625 = 25bp annualised)',
         'level_equals_pct_of_ss': False,
     },
     'fiscal_spending': {
