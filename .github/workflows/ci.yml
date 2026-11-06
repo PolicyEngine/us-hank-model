@@ -23,8 +23,11 @@ jobs:
         run: pip install -e .[dev]
       - name: Fast tests
         run: pytest -q
-      - name: Full production-grid validation (slow, main/dispatch only)
-        if: github.event_name != 'pull_request'
+      # The production-grid suite (steady state, Jacobian, scenario sweep,
+      # nonlinear transition paths) takes about 30s on CI, so it runs on
+      # every PR as well: a gate that only runs after merge protects nothing.
+      - name: Full production-grid validation (slow suite, every PR)
+        timeout-minutes: 20
         run: pytest --runslow -q
 
   dispatch:
