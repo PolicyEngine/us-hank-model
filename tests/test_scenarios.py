@@ -87,9 +87,11 @@ def test_steady_state_is_a_fixed_point_of_the_dynamic_model(ss):
 def test_linear_irf_matches_the_nonlinear_transition_for_small_shocks(
         ss, G_jac, nonlinear, kind, size, rho, bound):
     """For a tiny shock the nonlinear transition must equal the Jacobian IRF:
-    this validates G_jac and the unit scaling in model.shock (a 1% scaling
-    error fails the monetary case). The remaining gap is the steady-state
-    offset above, which is large only relative to a tiny shock."""
+    this validates G_jac and the unit scaling in model.shock. A 2% scaling
+    error fails the monetary case on every variable whatever its sign: the
+    gap becomes at least (0.02 - 0.0077) / 1.02 = 0.012 > 0.01. The remaining
+    gap is the steady-state offset above, which is large only relative to a
+    tiny shock."""
     nl = nonlinear[(kind, size, rho)]
     lin = model.shock(kind, size, rho, T=T, ss=ss, G_jac=G_jac)
     for v in VARS:
@@ -123,10 +125,11 @@ def test_spending_multiplier_is_strongly_nonlinear_at_1pct_of_gdp(
     (rho 0.8), is a first-order number. On the nonlinear transition the same
     shock gives 0.251 and a 1% cut gives -0.125: a second-order term of about
     +0.06% of GDP that does not change sign with the shock. The linear
-    multiplier is small, so this term is 44% of the linear peak. A +2%-of-GDP
-    rise does not solve nonlinearly at all (a solved block's backward
-    iteration fails to converge), so beyond about 1% of GDP only the linear
-    IRF exists and it understates a rise and overstates a cut. Pinned; the
+    multiplier is small, so this term is 44% of the linear peak. At +2% of
+    GDP the nonlinear solve does not converge at default settings
+    ("No convergence after 30 backward iterations!"), so there only the
+    linear IRF is available, and at 1% it understates a rise and overstates
+    a cut. Pinned; the
     tax response is the other side of it (+0.30pp impact vs 0.51pp linear)."""
     up, dn = (nonlinear[('fiscal_spending', s, 0.8)] for s in (0.01, -0.01))
     lin = model.shock('fiscal_spending', 0.01, 0.8, T=T, ss=ss, G_jac=G_jac)
