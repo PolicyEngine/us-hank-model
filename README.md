@@ -81,7 +81,7 @@ three read naturally; the third is a trap:
 
 | kind | drives | ss level | `size=0.01` means |
 |---|---|---|---|
-| `monetary` | `rstar` | 0.0125 | +100bp per quarter |
+| `monetary` | `rstar` | 0.0125 | +100bp per quarter, about +400bp annualised (25bp annualised is `0.000625`) |
 | `fiscal_spending` | `G` | 0.2 | 1% of quarterly GDP (Y=1), i.e. a 5% rise in G |
 | `productivity` | `Z` | **0.468** | a **2.14%** TFP improvement — *not* 1% |
 
@@ -104,6 +104,14 @@ from quarter 1 the real rate is above steady state and the tax does the full
 work. The resulting impact multiplier (0.175) is a
 **balanced-budget** multiplier under an active Taylor rule, and must not be
 compared with deficit-financed multipliers.
+
+The multiplier depends strongly on persistence, and output turns negative
+from quarter 3 while G is still raised: the labour tax stays 1–1.6pp higher
+and investment is crowded out. At rho 0.8 the impact multiplier is 0.175 and
+the cumulative multiplier over 20 quarters is −0.015. At rho 0.9 (PolicyEngine
+Macro's hosted default) they are 0.075 and −0.032. No published IRF for this
+calibration gates these numbers; `tests/test_scenarios.py` pins them as
+regression values only.
 
 ## Fiscal 2025 variant
 

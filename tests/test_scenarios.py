@@ -121,3 +121,41 @@ def test_wealth_quartile_allocation_sums_to_the_aggregate(ss, G_jac, kind,
     assert sum(q.values()) / 4 == pytest.approx(irf['C'][0], rel=1e-10,
                                                 abs=1e-12)
     assert all(np.sign(v) == np.sign(irf['C'][0]) for v in q.values())
+
+
+# Y (% dev) for a 1%-of-GDP G shock, quarters 0-8 (CI, 6 Nov 2026).
+_Y_G = {
+    0.8: [0.1753, 0.0685, 0.0112, -0.0182, -0.0315, -0.0359, -0.0355,
+          -0.0328, -0.0292],
+    0.9: [0.0749, 0.0294, 0.0025, -0.0130, -0.0216, -0.0260, -0.0280,
+          -0.0285, -0.0282],
+}
+_CUM_G = {0.8: {4: 0.0802, 20: -0.0151, 40: -0.0244},
+          0.9: {4: 0.0273, 20: -0.0323, 40: -0.0510}}
+
+
+@pytest.mark.parametrize('rho', [0.8, 0.9])
+def test_spending_output_path_turns_negative_while_g_is_raised(ss, G_jac,
+                                                               rho):
+    """Issue #5. A tax-financed G rise lifts output only briefly. From quarter
+    3, with G still 51-73% of its impact level, the persistently higher labour
+    tax and crowded-out investment push output below steady state, and the
+    20- and 40-quarter cumulative multipliers are negative. These are regression
+    pins on this implementation; no published IRF gates them."""
+    irf = model.shock('fiscal_spending', 0.01, rho, T=T, ss=ss, G_jac=G_jac)
+    assert np.allclose(irf['Y'][:9], _Y_G[rho], atol=1.5e-3)
+    assert int(np.argmax(irf['Y'] < 0)) == 3
+    assert np.all(irf['shock'][:9] > 0)
+    dY = irf['Y'] / 100 * ss['Y']
+    for h, want in _CUM_G[rho].items():
+        assert dY[:h].sum() / irf['shock'][:h].sum() == pytest.approx(
+            want, abs=2e-3), h
+
+
+def test_monetary_inflation_peaks_on_impact(ss, G_jac):
+    """Forward-looking NKPC: for a persistent (rho 0.9) 25bp-per-quarter
+    tightening, inflation's largest move is on impact (-0.336pp per quarter,
+    about -1.34pp annualised), not after a lag. Model class, not a bug."""
+    irf = model.shock('monetary', 0.0025, 0.9, T=T, ss=ss, G_jac=G_jac)
+    assert int(np.argmax(np.abs(irf['pi']))) == 0
+    assert irf['pi'][0] == pytest.approx(-0.3356, abs=3e-3)
