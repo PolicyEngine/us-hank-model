@@ -123,33 +123,55 @@ MEDIAN_TARGETS = {
     'median_liquid_to_income': 4 * SCF_2001_KV['median_liquid'] / SCF_2001_KV['mean_earnings'],
     # 4 x 54,600 / 52,745 = 4.14 quarters of mean labour income
     'median_illiquid_to_income': 4 * SCF_2001_KV['median_illiquid'] / SCF_2001_KV['mean_earnings'],
-    # Poor hand-to-mouth share: Kaplan, Violante & Weidner (2014, BPEA),
-    # about 12% of US households.
+    # Poor hand-to-mouth share: Kaplan, Violante & Weidner (2014, Brookings
+    # Papers on Economic Activity, Table 3 baseline, SCF pooled 1989-2010,
+    # biweekly pay period): 0.121 poor, 0.192 wealthy, 0.312 in total. A
+    # different sample from the 2001 medians above.
     'poor_htm': 0.12,
-    # Quarterly MPC out of $500 per household: inside the 0.15-0.25 range.
+    # Quarterly MPC out of $500 per household, target band 0.15-0.25: the
+    # 2001 rebate coefficient on nondurables is 0.375 (JPS 2006), 0.22-0.24
+    # with the CEX outliers trimmed and 0.244 by IV quantile regression
+    # (Kaplan & Violante 2014, Table I); for 2008, households spent 12-30% of
+    # the payments on nondurables in the quarter of receipt (Parker,
+    # Souleles, Johnson & McClelland 2013, AER 103(6)). KV's own model gives
+    # about 20% out of a surprise $500. These are nondurables; the model has
+    # one consumption good.
     'mpc_500': 0.20,
 }
 
 #: Hand-to-mouth cutoff, model units, for both assets: liquid wealth below it
 #: is hand-to-mouth, and hand-to-mouth with illiquid wealth below it too is
 #: POOR hand-to-mouth (the Kaplan-Violante-Weidner split). 0.05 is about
-#: $1,000 at the 2001 SCF scale (0.05 / 0.66 x 52,745 / 4), roughly the
-#: "half of earnings per pay period" KV (2014, section 4.2) use in the data
-#: for a monthly pay period at median earnings ($41,000 / 12 / 2 = $1,700 /
-#: 2). It is ``distributional.DEFAULT_HTM_THRESHOLD``. The mass exactly at
-#: the liquid kink (b = 0) is reported too, but it depends on the grid
-#: (lottery weights), so it is not the target.
+#: $1,000 at the 2001 SCF scale (0.05 / 0.66 x 52,745 / 4). KVW's data rule is
+#: liquid wealth at most half of earnings per pay period; at median earnings
+#: ($41,000) that is about $790 for their biweekly baseline and $1,700 for a
+#: monthly pay period, so $1,000 sits between the two. It equals
+#: ``distributional.DEFAULT_HTM_THRESHOLD``. The mass exactly at the liquid
+#: kink (b = 0) is reported too, but it moves with the grid (lottery
+#: weights), so it is not the target.
 HTM_CUTOFF = 0.05
 
 #: Second calibration of the variant (issue #8, round 4): median wealth
-#: targets, ``liquid_target='median'``. PLACEHOLDER until the sweep lands.
+#: targets, ``liquid_target='median'``. Three equal-mass types on a uniform
+#: beta distribution of half-width ``beta_spread`` around the centre ``beta``
+#: (Carroll, Slacalek, Tokuoka & White 2017), ``chi1`` set outside the solve.
+#: (beta_spread, chi1) were chosen on a grid (CI runs 42149673949,
+#: 42150101068, 42150572003, 42150783547) to fit the two medians with every
+#: type inside or near the Carroll et al. liquid-wealth range
+#: (0.936-0.978/quarter). Fits, refined grid: median liquid 0.205 (target
+#: 0.199), median illiquid 4.69 (4.14), poor HtM 0.060 (0.12), MPC out of
+#: $500 0.126 (0.15-0.25). The last two MISS, and cannot be reached: a wider
+#: spread (0.034) or a fourth, more impatient type at 12-15% mass leaves no
+#: centre beta that clears the asset market at A + B = 14 with the most
+#: patient type below 1 / (1 + r). The most patient type sits at that cap
+#: here (0.9875 vs 0.98765). chi0 in 0.02-0.25 moves poor HtM by under 1pp.
 MEDIAN_CALIBRATION = {
     **_model.PRODUCTION_CALIBRATION,
     'beta_offsets': (-2 / 3, 0.0, 2 / 3),
     'beta_masses': (1 / 3, 1 / 3, 1 / 3),
-    'beta_spread': 0.02,
+    'beta_spread': 0.033,
     'beta_switch': 1 / 200,
-    'chi1': 12.0,
+    'chi1': 6.3,
 }
 
 #: Starting guess for the (beta, chi1) solve: the default's.

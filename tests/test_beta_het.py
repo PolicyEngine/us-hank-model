@@ -203,3 +203,54 @@ def test_weighted_median_interpolates_inside_the_crossing_cell():
     g = np.array([0.0, 1.0, 2.0])
     assert beta_het._weighted_median(g, np.array([0.6, 0.2, 0.2])) == 0.0
     assert beta_het._weighted_median(g, np.array([0.25, 0.5, 0.25])) == pytest.approx(0.5)
+
+
+# --- median-target calibration, production grids (slow) ----------------------
+# Pinned from CI run 42150783547 (r5d): three types, beta 0.9435 / 0.9655 /
+# 0.9875, chi1 6.3.
+
+
+@pytest.fixture(scope="module")
+def ss_med():
+    return beta_het.solve_steady_state(liquid_target='median')
+
+
+@pytest.fixture(scope="module")
+def G_med(ss_med):
+    return beta_het.solve_jacobian(ss_med, T=300)
+
+
+@pytest.mark.slow
+def test_median_calibration_steady_state_and_target_fits(ss_med):
+    assert abs(ss_med['asset_mkt']) < 1e-8
+    assert abs(ss_med['goods_mkt']) < 1e-6
+    assert abs(ss_med['A'] + ss_med['B'] - 14.0) < 1e-8
+    assert ss_med['B'] == pytest.approx(1.212, abs=2e-3)  # not 1.04: untargeted
+    betas = sorted(set(ss_med.internals['hh']['beta_z']))
+    assert np.allclose(betas, [0.9435, 0.9655, 0.9875], atol=2e-4)
+    assert max(betas) < beta_het.beta_cap(ss_med.toplevel)
+    ref = beta_het.refined_household_ss(ss_med)
+    m = beta_het.wealth_moments(ref)
+    assert m['median_liquid_to_income'] == pytest.approx(0.205, abs=3e-3)
+    assert m['median_illiquid_to_income'] == pytest.approx(4.69, abs=0.03)
+    assert m['poor_htm'] == pytest.approx(0.060, abs=2e-3)
+    mpc = {d: distributional.aggregate_mpc(ref, beta_het.rebate_frac(ss_med, d))
+           for d in (500, 1000, 1500)}
+    assert mpc[500] == pytest.approx(0.126, abs=2e-3)
+    assert mpc[1000] == pytest.approx(0.110, abs=2e-3)
+    assert mpc[1500] == pytest.approx(0.101, abs=2e-3)
+
+
+@pytest.mark.slow
+def test_median_calibration_spending_multiplier_stays_positive(ss_med, G_med):
+    """The issue #5 sign: with every beta in 0.94-0.99, cumulative output
+    stays positive for 40 quarters at rho 0.8 and 0.9 (default: negative
+    from q3)."""
+    for rho, impact, cum20 in ((0.8, 0.274, 0.213), (0.9, 0.216, 0.208)):
+        r = model.shock('fiscal_spending', 0.01, rho, ss=ss_med, G_jac=G_med)
+        g = 100 * r['shock']
+        assert r['Y'][0] / g[0] == pytest.approx(impact, abs=2e-3)
+        assert r['Y'][:20].sum() / g[:20].sum() == pytest.approx(cum20, abs=2e-3)
+        assert (r['Y'][:40] > 0).all()
+    m = model.shock('monetary', -0.0025, 0.61, ss=ss_med, G_jac=G_med)
+    assert m['Y'][0] == pytest.approx(0.360, abs=2e-3)

@@ -199,6 +199,48 @@ an impatient mass of 1/4 or 1/2 needs β gaps of 0.160 or 0.099 and gives
 impact multipliers 0.403 and 0.385; halving the type-switch rate moves the
 $1,000 MPC 0.200 → 0.207.
 
+### Second calibration: median wealth targets (`liquid_target='median'`)
+
+The first calibration keeps the aggregate targets (total wealth 14, liquid
+B 1.04), and that forces the low impatient β. Kaplan & Violante (2014,
+fn. 28) target median wealth instead. The second calibration does that:
+
+```python
+ss_m = beta_het.solve_steady_state(liquid_target='median')
+```
+
+It uses three equal-mass types on a uniform β distribution. It drops the
+B = 1.04 target, so B comes out at 1.21 and `Bh` is reset to it. χ1 is set
+outside the solve, and β alone clears the asset market at A + B = 14. The
+targets are from the 2001 SCF as reported in KV (2014, Table III), ratios to
+mean labour income: median liquid wealth 0.199 quarters and median illiquid
+wealth 4.14 quarters. The poor hand-to-mouth target is 12.1% (Kaplan,
+Violante & Weidner 2014, Table 3). The MPC band out of $500 is 0.15–0.25
+(sources in `beta_het.MEDIAN_TARGETS`). Grid search: CI runs 42149673949,
+42150101068, 42150572003 and 42150783547.
+
+| | Default | β-het, aggregate targets | β-het, median targets | Target |
+|---|---|---|---|---|
+| β by type (quarterly) | 0.976 | 0.852 / 0.983 | 0.9435 / 0.9655 / 0.9875 | Carroll et al. liquid 0.936–0.978 |
+| Median liquid / income (quarters) | 0.000 | 0.008 | 0.205 | 0.199 |
+| Median illiquid / income (quarters) | 12.64 | 6.14 | 4.69 | 4.14 |
+| Poor / all hand-to-mouth (b, a < 0.05) | 0.019 / 0.546 | 0.204 / 0.579 | 0.060 / 0.450 | 0.121 / 0.312 |
+| MPC $500 / $1,000 / $1,500 | 0.104 / 0.091 / 0.083 | 0.227 / 0.200 / 0.186 | 0.126 / 0.110 / 0.101 | 0.15–0.25 at $500 |
+| G ρ 0.8: impact / 20q cumulative multiplier | 0.175 / −0.015 | 0.376 / 0.309 | 0.274 / 0.213 | |
+| G ρ 0.8 / 0.9: first quarter with Y < 0 | q3 / q3 | q23 / none | none / none (40q) | |
+| Monetary −25bp/q: impact Y / C / I (%) | 0.493 / 0.300 / 1.698 | 0.244 / 0.308 / 0.478 | 0.360 / 0.240 / 1.191 | |
+
+The moments are measured on the refined liquid grid, with the hand-to-mouth
+shares using the 0.05 (about $1,000) cutoff. With every β inside or near the
+Carroll et al. range, both medians come close. Poor hand-to-mouth (6%) and
+the MPC (0.126) stay below their targets. They cannot be pushed further in
+this model. A wider spread, or a fourth, impatient type with 12–15% of
+households, leaves no centre β that clears the asset market at A + B = 14
+with the most patient type below 1/(1+r), and that type already sits at the
+cap. χ0 between 0.02 and 0.25 moves poor hand-to-mouth by under 1 point. The
+spending-multiplier sign result survives: output stays positive for 40
+quarters at ρ 0.8 and 0.9 without the extreme impatient type.
+
 ## Quickstart
 
 ```python
