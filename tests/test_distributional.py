@@ -196,7 +196,9 @@ def test_rebate_scale_mpc_is_still_far_below_the_empirical_range(ss):
     first liquid grid step (b_grid[1] = 0.0286 = 6.7% of income): there the
     arc MPC is the slope of the first grid segment, constant at 0.075 for
     every windfall under that step, i.e. the grid-step MPC (0.076 at nB=50,
-    rising to 0.100 at nB=150). Small-rebate MPCs are a grid property here.
+    rising to 0.100 at nB=150). Small-rebate MPCs are a grid property here;
+    test_refined_mpc.py measures them on a converged liquid grid (0.104 /
+    0.091 / 0.083 at $500 / 1,000 / 1,500 per household).
     """
     lo = _frac_for_dollars(ss, 1000, _Q_GDP_PER_HEAD)
     hi = _frac_for_dollars(ss, 1500, _Q_GDP_PER_HEAD)

@@ -99,19 +99,7 @@ def mpc_liquid(ss, windfall_frac: float | None = DEFAULT_WINDFALL_FRAC):
     # and so report a zero MPC for the richest households; extrapolate along
     # the last interval's slope instead. (Negligible mass lives there, but a
     # clamp would be a silent zero rather than an approximation.)
-    shifted = np.empty_like(c)
-    target = b_grid + windfall
-    over = target > b_grid[-1]
-    span = b_grid[-1] - b_grid[-2]
-    for iz in range(c.shape[0]):
-        for ia in range(c.shape[2]):
-            col = c[iz, :, ia]
-            vals = np.interp(target, b_grid, col)
-            if over.any():
-                slope = (col[-1] - col[-2]) / span
-                vals = np.where(over,
-                                col[-1] + slope * (target - b_grid[-1]), vals)
-            shifted[iz, :, ia] = vals
+    shifted = _shift_along_b(c, b_grid, windfall)
     return np.minimum((shifted - c) / windfall, 1.0), D, b_grid
 
 
@@ -259,6 +247,153 @@ def _mean_by_quantile(x, weights, key, n, prefix):
         frac = np.divide(overlap, block_w, out=np.zeros_like(overlap),
                          where=block_w > 0)
         out[f'{prefix}{i + 1}'] = float(np.sum(frac * block_wx) / mass)
+    return out
+
+
+# --- MPCs on a refined liquid grid ------------------------------------------
+#
+# The production liquid grid (nB=50, pivot 0.25) has its first positive point
+# at b = 0.0286, i.e. 6.7% of mean quarterly post-tax income. Every windfall
+# smaller than that -- which includes a $500-1,500 rebate per household --
+# lands inside the first grid segment, so its arc MPC is that segment's slope
+# and not an economic quantity. The functions below re-solve the HOUSEHOLD
+# block alone on a liquid grid that is denser near the constraint, holding
+# every price and parameter (beta, chi1, rb, ra, tax, w, N) at the solved
+# general-equilibrium steady state. Nothing is recalibrated and no published
+# number from the production steady state changes.
+#
+# Caveat: at fixed prices the finer grid's stationary distribution holds
+# slightly less liquid wealth (B = 1.019 vs the 1.04 target at nB=200), a
+# partial-equilibrium drift of 2% that the MPC statistic tolerates but a GE
+# object would not. Use these for MPC statistics only, never for IRFs.
+
+#: Refined liquid grid used by ``refined_household_ss`` by default. Converged:
+#: rebate-sized MPCs move by less than 1e-4 from here to nB=400.
+REFINED_LIQUID_GRID = {'nB': 200, 'b_pivot': 0.01}
+
+_REFINED_CACHE: dict = {}
+
+
+def _make_grids_refined(bmax, amax, kmax, nB, nA, nK, nZ, rho_z, sigma_z,
+                        b_pivot):
+    """``two_asset.make_grids`` with the liquid-grid pivot exposed.
+
+    The toolkit's ``agrid`` spaces points evenly in log(b + 0.25); a smaller
+    pivot packs more of them near the constraint at b = 0. With
+    ``b_pivot=0.25`` this reproduces the production grid exactly.
+    """
+    from sequence_jacobian import grids
+    b_grid = np.geomspace(b_pivot, bmax + b_pivot, nB) - b_pivot
+    b_grid[0] = 0.0
+    a_grid = grids.agrid(amax=amax, n=nA)
+    k_grid = grids.agrid(amax=kmax, n=nK)[::-1].copy()
+    e_grid, _, Pi = grids.markov_rouwenhorst(rho=rho_z, sigma=sigma_z, N=nZ)
+    return b_grid, a_grid, k_grid, e_grid, Pi
+
+
+def refined_household_ss(ss, nB: int | None = None,
+                         b_pivot: float | None = None):
+    """Household steady state on a refined liquid grid, at ``ss`` prices.
+
+    Returns a steady-state dict whose ``internals['hh']`` can be passed to
+    every MPC function in this module. Cached on ``(id(ss), nB, b_pivot)``;
+    the entry keeps ``ss`` alive so an address can never be reused.
+    """
+    nB = REFINED_LIQUID_GRID['nB'] if nB is None else int(nB)
+    b_pivot = (REFINED_LIQUID_GRID['b_pivot'] if b_pivot is None
+               else float(b_pivot))
+    key = (id(ss), nB, b_pivot)
+    if key in _REFINED_CACHE:
+        return _REFINED_CACHE[key][1]
+    from sequence_jacobian.examples import two_asset as ta
+    block = ta.hh.add_hetinputs([ta.income, _make_grids_refined])
+    inputs = dict(ss.toplevel)
+    inputs.update(nB=nB, b_pivot=b_pivot)
+    out = block.steady_state(inputs)
+    _REFINED_CACHE[key] = (ss, out)
+    return out
+
+
+def refined_aggregate_mpc(ss, windfall_frac: float = DEFAULT_WINDFALL_FRAC,
+                          nB: int | None = None,
+                          b_pivot: float | None = None) -> float:
+    """Aggregate quarterly MPC out of ``windfall_frac`` on a refined liquid grid.
+
+    Use this for rebate-sized windfalls (below ~6.7% of quarterly income),
+    where the production-grid number is the first grid segment's slope. At
+    the 25% default it agrees with ``aggregate_mpc`` to about 0.001.
+    """
+    if windfall_frac is None or windfall_frac <= 0:
+        raise ValueError("refined MPCs need a positive windfall_frac")
+    return aggregate_mpc(refined_household_ss(ss, nB, b_pivot), windfall_frac)
+
+
+def windfall_allocation(ss, windfall_frac: float = DEFAULT_WINDFALL_FRAC,
+                        illiquid_threshold: float = DEFAULT_HTM_THRESHOLD
+                        ) -> dict:
+    """Where a liquid windfall goes, by group: consumed, kept liquid, or
+    moved into the illiquid account.
+
+    For each group returns its population ``mass`` and the population-mean
+    arc responses per unit of windfall: ``mpc`` (consumption),
+    ``mps_liquid`` (end-of-period b'), ``mps_illiquid`` (end-of-period a')
+    and ``adj_cost`` (change in portfolio adjustment cost). The four add up
+    to 1 + rb, because the windfall arrives in beginning-of-period liquid
+    assets and earns rb before it is spent; that is the household budget
+    constraint, and a test checks it.
+
+    Groups split households by whether their liquid policy is AT the
+    borrowing limit (b' = 0), and the constrained ones by illiquid wealth.
+    This is the diagnostic behind the model's low MPC: constrained
+    households, half the population, move most of a rebate-sized windfall
+    into the illiquid account rather than consuming it (75% of $1,000 on the
+    refined grid).
+
+    Pass ``refined_household_ss(ss)`` as ``ss`` for rebate-sized windfalls.
+    """
+    if windfall_frac is None or windfall_frac <= 0:
+        raise ValueError("windfall_allocation needs a positive windfall_frac")
+    h = _hh(ss)
+    D, b_grid, a_grid = h['D'], h['b_grid'], h['a_grid']
+    w = windfall_frac * mean_quarterly_labour_income(ss)
+    resp = {name: (_shift_along_b(h[pol], b_grid, w) - h[pol]) / w
+            for name, pol in (('mpc', 'c'), ('mps_liquid', 'b'),
+                              ('mps_illiquid', 'a'), ('adj_cost', 'chi'))}
+    constrained = h['b'] <= b_grid[0]
+    has_illiquid = np.broadcast_to(a_grid[None, None, :] >= illiquid_threshold,
+                                   D.shape)
+    groups = {
+        'all': np.ones(D.shape, bool),
+        'constrained': constrained,
+        'constrained_with_illiquid': constrained & has_illiquid,
+        'constrained_without_illiquid': constrained & ~has_illiquid,
+        'unconstrained': ~constrained,
+    }
+    out = {'windfall_frac': float(windfall_frac),
+           'windfall_model_units': float(w)}
+    for g, m in groups.items():
+        mass = float(D[m].sum())
+        out[g] = {'mass': mass}
+        for k, r in resp.items():
+            out[g][k] = float((D[m] * r[m]).sum() / mass) if mass > 0 else None
+    return out
+
+
+def _shift_along_b(pol, b_grid, w):
+    """pol(z, b + w, a), linear along b, extrapolated past the top point."""
+    out = np.empty_like(pol)
+    target = b_grid + w
+    over = target > b_grid[-1]
+    span = b_grid[-1] - b_grid[-2]
+    for iz in range(pol.shape[0]):
+        for ia in range(pol.shape[2]):
+            col = pol[iz, :, ia]
+            vals = np.interp(target, b_grid, col)
+            if over.any():
+                slope = (col[-1] - col[-2]) / span
+                vals = np.where(over,
+                                col[-1] + slope * (target - b_grid[-1]), vals)
+            out[iz, :, ia] = vals
     return out
 
 
