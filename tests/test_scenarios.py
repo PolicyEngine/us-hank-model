@@ -22,11 +22,124 @@ CASES += [('fiscal_spending', s, rho)
 CASES += [('productivity', s, 0.9) for s in (-0.01, 0.01)]
 
 
-@pytest.mark.parametrize('kind', sorted(model.SHOCK_KINDS))
-def test_zero_shock_is_the_steady_state(ss, G_jac, kind):
-    irf = model.shock(kind, 0.0, 0.8, T=T, ss=ss, G_jac=G_jac)
+# --- Nonlinear checks -------------------------------------------------------
+# model.shock is a matrix-vector product against a fixed Jacobian, so in it a
+# zero shock is zero and opposite shocks mirror by construction; tests of
+# those properties cannot fail. The checks below compare it with the model's
+# own nonlinear perfect-foresight transition (sequence-jacobian's
+# solve_impulse_nonlinear on the same DAG), which can. Values measured on CI
+# (production grids, T=300) on 6 Nov 2026; bounds are measured + margin.
+
+NL_VARS = VARS + tuple(model.TARGETS) + ('goods_mkt',)
+
+
+def _nonlinear(ss, kind, size, rho):
+    _, dag = model.build_models()
+    inp = model.SHOCK_KINDS[kind]
+    nl = dag.solve_impulse_nonlinear(
+        ss, model.UNKNOWNS, model.TARGETS, {inp: size * rho ** np.arange(T)},
+        outputs=list(NL_VARS))
+    out = {}
     for v in VARS:
-        assert np.all(irf[v] == 0.0), (kind, v)
+        scale = 100 / ss[v] if v in ('Y', 'C', 'I') else 100
+        out[v] = np.asarray(nl[v]) * scale
+    for v in tuple(model.TARGETS) + ('goods_mkt',):
+        out[v] = np.asarray(nl[v])
+    return out
+
+
+def _gap(nl, lin, v):
+    """max |nonlinear - linear| over the path, relative to the linear peak."""
+    return np.max(np.abs(nl[v] - lin[v])) / np.max(np.abs(lin[v]))
+
+
+NL_CASES = [('monetary', 1e-5, 0.61), ('fiscal_spending', 1e-4, 0.8),
+            ('monetary', 0.0025, 0.61), ('monetary', -0.0025, 0.61),
+            ('fiscal_spending', 0.01, 0.8), ('fiscal_spending', -0.01, 0.8)]
+
+
+@pytest.fixture(scope='module')
+def nonlinear(ss):
+    return {c: _nonlinear(ss, *c) for c in NL_CASES}
+
+
+def test_steady_state_is_a_fixed_point_of_the_dynamic_model(ss):
+    """Feed the dynamic DAG the steady state (every exogenous input and
+    unknown at its ss value for T quarters): every target must stay at zero.
+    This catches a steady-state DAG that disagrees with the dynamic one.
+    Measured: asset_mkt 3.9e-6 (the household block re-iterated from the ss
+    policy, against 1e-11 in the ss solve itself), fisher 0, wnkpc 4.7e-8,
+    goods_mkt 7.8e-8."""
+    _, dag = model.build_models()
+    zero = {k: np.zeros(T) for k in model.EXOGENOUS + model.UNKNOWNS}
+    out = dag.impulse_nonlinear(ss, zero, outputs=list(model.TARGETS)
+                                + ['goods_mkt'])
+    bounds = {'asset_mkt': 1e-5, 'fisher': 1e-10, 'wnkpc': 1e-7,
+              'goods_mkt': 2e-7}
+    for k, b in bounds.items():
+        assert np.max(np.abs(out[k])) < b, k
+
+
+@pytest.mark.parametrize('kind,size,rho,bound', [
+    ('monetary', 1e-5, 0.61, 0.01),        # measured max 0.0077 (pi)
+    ('fiscal_spending', 1e-4, 0.8, 0.025),  # measured max 0.0174 (Y)
+])
+def test_linear_irf_matches_the_nonlinear_transition_for_small_shocks(
+        ss, G_jac, nonlinear, kind, size, rho, bound):
+    """For a tiny shock the nonlinear transition must equal the Jacobian IRF:
+    this validates G_jac and the unit scaling in model.shock (a 1% scaling
+    error fails the monetary case). The remaining gap is the steady-state
+    offset above, which is large only relative to a tiny shock."""
+    nl = nonlinear[(kind, size, rho)]
+    lin = model.shock(kind, size, rho, T=T, ss=ss, G_jac=G_jac)
+    for v in VARS:
+        assert _gap(nl, lin, v) < bound, v
+    for k in model.TARGETS:
+        assert np.max(np.abs(nl[k])) < 1e-8, k
+
+
+def test_monetary_nonlinearity_at_100bp_annualised_is_small(ss, G_jac,
+                                                            nonlinear):
+    """A 25bp-per-quarter shock (about 100bp annualised): the linear IRF is
+    within 5% of its peak of the nonlinear path for every variable (measured
+    max 0.037, Y on the easing), and easing moves output more than
+    tightening: Y on impact +0.511 vs -0.477 (linear 0.493), a 7.1% gap
+    between the two paths. Pinned two-sided, so a model that became linear
+    here would fail too."""
+    up, dn = (nonlinear[('monetary', s, 0.61)] for s in (0.0025, -0.0025))
+    for s, nl in ((0.0025, up), (-0.0025, dn)):
+        lin = model.shock('monetary', s, 0.61, T=T, ss=ss, G_jac=G_jac)
+        for v in VARS:
+            assert _gap(nl, lin, v) < 0.05, (s, v)
+    assert up['Y'][0] == pytest.approx(-0.4773, abs=3e-3)
+    assert dn['Y'][0] == pytest.approx(0.5110, abs=3e-3)
+    asym = np.max(np.abs(up['Y'] + dn['Y'])) / np.max(np.abs(up['Y']))
+    assert 0.05 < asym < 0.09
+
+
+def test_spending_multiplier_is_strongly_nonlinear_at_1pct_of_gdp(
+        ss, G_jac, nonlinear):
+    """The README's linear impact multiplier, 0.175 for a 1%-of-GDP G rise
+    (rho 0.8), is a first-order number. On the nonlinear transition the same
+    shock gives 0.251 and a 1% cut gives -0.125: a second-order term of about
+    +0.06% of GDP that does not change sign with the shock. The linear
+    multiplier is small, so this term is 44% of the linear peak. A +2%-of-GDP
+    rise does not solve nonlinearly at all (a solved block's backward
+    iteration fails to converge), so beyond about 1% of GDP only the linear
+    IRF exists and it understates a rise and overstates a cut. Pinned; the
+    tax response is the other side of it (+0.30pp impact vs 0.51pp linear)."""
+    up, dn = (nonlinear[('fiscal_spending', s, 0.8)] for s in (0.01, -0.01))
+    lin = model.shock('fiscal_spending', 0.01, 0.8, T=T, ss=ss, G_jac=G_jac)
+    assert lin['Y'][0] == pytest.approx(0.1753, abs=2e-3)
+    assert up['Y'][0] == pytest.approx(0.2508, abs=5e-3)
+    assert dn['Y'][0] == pytest.approx(-0.1251, abs=5e-3)
+    assert up['tax'][0] == pytest.approx(0.3012, abs=5e-3)
+    assert 0.35 < _gap(up, lin, 'Y') < 0.55       # measured 0.441
+    asym = np.max(np.abs(up['Y'] + dn['Y'])) / np.max(np.abs(up['Y']))
+    assert 0.40 < asym < 0.60                     # measured 0.501
+    for nl in (up, dn):
+        for k in model.TARGETS:
+            assert np.max(np.abs(nl[k])) < 1e-7, k
 
 
 @pytest.mark.parametrize('kind,size,rho', CASES)
@@ -41,14 +154,6 @@ def test_equilibrium_conditions_hold_along_every_shock(ss, G_jac, kind, size,
     # observed max 9e-5 at 100bp/rho=0.9, against level dY of order 1e-2
     assert np.max(np.abs(G_jac['goods_mkt'][inp] @ dx)) < 2e-4 * max(
         1.0, abs(size) / 0.01)
-
-
-@pytest.mark.parametrize('kind,size,rho', CASES)
-def test_opposite_shocks_give_mirror_responses(ss, G_jac, kind, size, rho):
-    up = model.shock(kind, size, rho, T=T, ss=ss, G_jac=G_jac)
-    down = model.shock(kind, -size, rho, T=T, ss=ss, G_jac=G_jac)
-    for v in VARS:
-        assert np.allclose(up[v], -down[v], rtol=0, atol=1e-13), v
 
 
 @pytest.mark.parametrize('rho', [0.0, 0.61, 0.9])
