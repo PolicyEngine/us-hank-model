@@ -82,9 +82,9 @@ from us_hank import distributional as _dist
 #: figure Kaplan & Violante (2014, Econometrica 82(4), 1199-1239) calibrate
 #: their model to: about 25% of a stimulus payment spent on nondurables in the
 #: quarter of receipt (the 2001 rebates; Johnson, Parker & Souleles 2006).
-#: The bottom end is the smaller 2008 response that Kaplan & Violante (2014,
-#: AER Papers & Proceedings 104(5)) discuss, about 15% within the quarter
-#: (Parker, Souleles, Johnson & McClelland 2013). The default model gives
+#: The bottom end is the smaller response to the 2008 payments, roughly 15%
+#: within the quarter in the studies Kaplan & Violante (2014, AER Papers &
+#: Proceedings 104(5)) cite. The default model gives
 #: 0.091 on the same measure (issue #8).
 MPC_TARGET = 0.20
 MPC_TARGET_DOLLARS_PER_HOUSEHOLD = 1000.0

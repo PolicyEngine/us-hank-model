@@ -178,7 +178,7 @@ symmetric types cannot reach the target: the patient type hits
 |---|---|---|
 | MPC, $500 / $1,000 / $1,500 per household (refined grid) | 0.104 / 0.091 / 0.083 | 0.227 / 0.200 / 0.186 |
 | Hand-to-mouth share (poor / wealthy) | 0.537 (0.019 / 0.518) | 0.572 (0.203 / 0.369) |
-| G shock ρ 0.8: impact multiplier | 0.175 | 0.376 |
+| G shock ρ 0.8: impact multiplier (first-order) | 0.175 | 0.376 |
 | G shock ρ 0.8: 20-quarter cumulative multiplier | −0.015 | 0.309 |
 | G shock ρ 0.8: first quarter with Y < 0 | 3 | 23 |
 | G shock ρ 0.9: impact / first Y < 0 | 0.075 / q3 | 0.319 / none in 40q |
@@ -188,7 +188,7 @@ So with an MPC in the evidence range the spending multiplier doubles on
 impact and the negative output path of issue #5 largely goes away: the
 same tax-and-wage-markup channel is still there, but higher-MPC households
 spend more of the extra income. Monetary easing moves output by half as
-much, because investment responds far less; consumption is about the same.
+much, and investment responds far less; consumption is about the same.
 The variant is calibrated on three numbers, not estimated, and the impatient
 type's β is low (0.852 a quarter, 0.53 a year): it is a device to put the
 MPC in range, not a measured preference. Sensitivity (CI run 42145287339):
