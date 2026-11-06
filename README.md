@@ -107,7 +107,16 @@ compared with deficit-financed multipliers.
 
 The multiplier depends strongly on persistence, and output turns negative
 from quarter 3 while G is still raised: the labour tax stays 1–1.6pp higher
-and investment is crowded out. At rho 0.8 the impact multiplier is 0.175 and
+and investment is crowded out. This is a model property, not a bug
+(`tests/test_spending_mechanism.py`). The household and government budget
+constraints hold along the IRF. The sign change comes from the labour tax
+entering the union's wage Phillips curve: a higher tax raises the wage the
+union sets, which pushes up wage and price inflation, and the Taylor rule
+answers with a higher real rate. If the tax is held out of wage setting
+(households still pay it), output stays positive every quarter, and the
+20-quarter cumulative multiplier is 0.73 instead of −0.015. A weaker Taylor
+rule (φ = 1.1) also keeps output positive, while φ = 3 makes output negative
+on impact. At rho 0.8 the impact multiplier is 0.175 and
 the cumulative multiplier over 20 quarters is −0.015. At rho 0.9 (PolicyEngine
 Macro's hosted default) they are 0.075 and −0.032. No published IRF for this
 calibration gates these numbers; `tests/test_scenarios.py` pins them as
