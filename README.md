@@ -221,13 +221,16 @@ constrained households: half the population ends the quarter at the liquid
 limit. But the illiquid account's adjustment cost is smooth and convex. It
 has zero marginal cost at zero adjustment, and no linear term of the kind
 Kaplan, Moll & Violante (2018) use to create an inaction region. So a
-constrained household that holds illiquid wealth just withdraws less: 59% of
-a $1,000 rebate goes into the illiquid account, and 11% is consumed
-(`distributional.windfall_allocation()`). Only 1.8% of households are
-constrained with no illiquid wealth, the group that acts close to
-hand-to-mouth (MPC 0.25). Raising the hand-to-mouth share does not help.
-Recalibrated to liquid wealth Bh = 0.5, the constrained share rises to 64%,
-yet the MPC *falls*. Seven income states instead of three also lower it
+constrained household that holds illiquid wealth just withdraws less: on the
+refined grid, 75% of a $1,000 rebate goes into the illiquid account, and 14%
+is consumed (`distributional.windfall_allocation()`). For a larger windfall
+(25% of income), the household leaves the constraint, keeps 60% of it liquid,
+and consumes 8%. Only 1.8% of households are constrained with no illiquid
+wealth, the group that acts close to hand-to-mouth (MPC 0.39 at $1,000).
+Raising the hand-to-mouth share does not help. Recalibrated to liquid wealth
+Bh = 0.5, the constrained share rises to 64%, yet the MPC *falls*; that
+recalibration also cuts χ1 from 6.4 to 3.8, cheapening adjustment, which is
+the same channel. Seven income states instead of three also lower it
 slightly. ABRS (2021) report no MPC for this calibration, so none of this is
 a replication failure. It is a property of the calibration.
 

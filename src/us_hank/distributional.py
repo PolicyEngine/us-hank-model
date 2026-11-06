@@ -345,8 +345,9 @@ def windfall_allocation(ss, windfall_frac: float = DEFAULT_WINDFALL_FRAC,
     Groups split households by whether their liquid policy is AT the
     borrowing limit (b' = 0), and the constrained ones by illiquid wealth.
     This is the diagnostic behind the model's low MPC: constrained
-    households, half the population, move most of a windfall into the
-    illiquid account rather than consuming it.
+    households, half the population, move most of a rebate-sized windfall
+    into the illiquid account rather than consuming it (75% of $1,000 on the
+    refined grid).
 
     Pass ``refined_household_ss(ss)`` as ``ss`` for rebate-sized windfalls.
     """

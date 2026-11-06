@@ -79,29 +79,38 @@ def test_refined_grid_keeps_prices_and_reports_its_drift(ss):
     assert float(r['B']) == pytest.approx(1.019, abs=5e-3)
 
 
-def test_constrained_households_move_most_of_a_windfall_into_illiquid_assets(ss):
-    """The diagnosis of the low MPC.
+def test_constrained_households_move_most_of_a_rebate_into_illiquid_assets(ss):
+    """The diagnosis of the low MPC, measured on the refined grid.
 
     Half the population ends the period at the liquid borrowing limit, which
     would ordinarily mean a high MPC. Here the illiquid account's adjustment
     cost is smooth and convex (zero marginal cost at zero adjustment, no
     linear term), so a constrained household with illiquid wealth simply
-    withdraws less from it: 59% of a $1,000 rebate ends up in the illiquid
-    account and 11% is consumed. Only the 1.8% of households that are
-    constrained with no illiquid wealth behave close to hand-to-mouth.
+    withdraws less from it: 75% of a $1,000 rebate ends up in the illiquid
+    account and 14% is consumed. Only the 1.8% of households that are
+    constrained with no illiquid wealth come close to hand-to-mouth (0.39).
+    For a large windfall (25% of income) the household leaves the constraint
+    and keeps most of it liquid instead, but still consumes only 8%.
     """
-    a = distributional.windfall_allocation(ss, _frac(ss, 1000))
+    r = distributional.refined_household_ss(ss)
     rb = float(ss['rb'])
+    a = distributional.windfall_allocation(r, _frac(ss, 1000))
     for g in ('all', 'constrained', 'unconstrained'):
         tot = sum(a[g][k] for k in ('mpc', 'mps_liquid', 'mps_illiquid',
                                     'adj_cost'))
         assert tot == pytest.approx(1 + rb, abs=1e-6)  # budget constraint
-    assert a['constrained']['mass'] == pytest.approx(0.497, abs=5e-3)
+    assert a['all']['mpc'] == pytest.approx(0.0913, abs=1e-3)
+    assert a['constrained']['mass'] == pytest.approx(0.4997, abs=5e-3)
     cw = a['constrained_with_illiquid']
-    assert cw['mass'] == pytest.approx(0.479, abs=5e-3)
-    assert cw['mps_illiquid'] == pytest.approx(0.593, abs=1e-2)
-    assert cw['mpc'] == pytest.approx(0.111, abs=5e-3)
-    assert a['constrained_without_illiquid']['mass'] == pytest.approx(
-        0.0182, abs=2e-3)
+    assert cw['mass'] == pytest.approx(0.4817, abs=5e-3)
+    assert cw['mps_illiquid'] == pytest.approx(0.746, abs=1e-2)
+    assert cw['mpc'] == pytest.approx(0.138, abs=5e-3)
+    cp = a['constrained_without_illiquid']
+    assert cp['mass'] == pytest.approx(0.018, abs=2e-3)
+    assert cp['mpc'] == pytest.approx(0.388, abs=1e-2)
     assert a['unconstrained']['mpc'] == pytest.approx(0.035, abs=3e-3)
     assert cw['mps_illiquid'] > 5 * cw['mpc']
+
+    big = distributional.windfall_allocation(r, 0.25)['constrained_with_illiquid']
+    assert big['mps_liquid'] == pytest.approx(0.595, abs=1e-2)
+    assert big['mpc'] == pytest.approx(0.081, abs=5e-3)
