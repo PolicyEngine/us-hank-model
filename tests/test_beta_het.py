@@ -152,3 +152,105 @@ def test_variant_monetary_easing_is_expansionary_but_smaller(ss_v, G_v, ss, G_ja
     assert d['Y'][0] == pytest.approx(0.493, abs=2e-3)
     assert r['C'][0] > d['C'][0] and r['I'][0] < d['I'][0]
     assert r['pi'][0] > 0
+
+
+# --- median-wealth targets (fast, demo grids) ---------------------------------
+
+def test_uniform_offsets_are_equal_mass_bin_midpoints():
+    assert beta_het.uniform_offsets(1) == (0.0,)
+    assert np.allclose(beta_het.uniform_offsets(3), (-2 / 3, 0.0, 2 / 3))
+    assert np.allclose(beta_het.uniform_offsets(5), (-0.8, -0.4, 0.0, 0.4, 0.8))
+
+
+def test_median_targets_are_the_kv2014_scf_ratios():
+    t = beta_het.MEDIAN_TARGETS
+    assert t['median_liquid_to_income'] == pytest.approx(4 * 2629 / 52745)
+    assert t['median_illiquid_to_income'] == pytest.approx(4 * 54600 / 52745)
+    assert t['poor_htm'] == pytest.approx(0.12)
+    assert 0.15 <= t['mpc_500'] <= 0.25
+
+
+def test_median_mode_clears_the_asset_market_with_beta_alone():
+    """chi1 stays where it is put, beta clears the asset market, and Bh is
+    reset to what households hold (so it is no longer 1.04)."""
+    ss = beta_het.solve_steady_state(liquid_target='median', use_cache=False,
+                                     chi1=9.0, **DEMO)
+    assert ss['chi1'] == 9.0
+    assert abs(ss['asset_mkt']) < 1e-8
+    assert abs(ss['A'] + ss['B'] - 14.0) < 1e-8
+    assert ss['Bh'] == pytest.approx(ss['B'], abs=1e-10)
+    assert abs(ss['B'] - 1.04) > 0.1
+    assert abs(ss['goods_mkt']) < 1e-6
+    assert abs(ss['fisher']) < 1e-10 and abs(ss['wnkpc']) < 1e-10
+    top = max(ss.internals['hh']['beta_z'])
+    assert top < beta_het.beta_cap(ss.toplevel)
+
+
+def test_wealth_moments_are_consistent_with_the_aggregates():
+    ss = _default_demo_ss()
+    m = beta_het.wealth_moments(ss)
+    assert m['income'] == pytest.approx(ss['w'] * ss['N'])
+    assert m['mean_liquid_to_income'] * m['income'] == pytest.approx(ss['B'], rel=1e-8)
+    assert m['mean_illiquid_to_income'] * m['income'] == pytest.approx(ss['A'], rel=1e-8)
+    assert 0 <= m['poor_htm'] <= m['htm'] <= 1
+    assert m['median_liquid_to_income'] <= m['mean_liquid_to_income']
+    htm = distributional.hand_to_mouth_breakdown(ss, beta_het.HTM_CUTOFF)
+    assert m['poor_htm'] == pytest.approx(htm['poor_hand_to_mouth_share'])
+    assert m['htm'] == pytest.approx(htm['hand_to_mouth_share'])
+
+
+def test_weighted_median_interpolates_inside_the_crossing_cell():
+    g = np.array([0.0, 1.0, 2.0])
+    assert beta_het._weighted_median(g, np.array([0.6, 0.2, 0.2])) == 0.0
+    assert beta_het._weighted_median(g, np.array([0.25, 0.5, 0.25])) == pytest.approx(0.5)
+
+
+# --- median-target calibration, production grids (slow) ----------------------
+# Pinned from CI run 42150783547 (r5d): three types, beta 0.9435 / 0.9655 /
+# 0.9875, chi1 6.3.
+
+
+@pytest.fixture(scope="module")
+def ss_med():
+    return beta_het.solve_steady_state(liquid_target='median')
+
+
+@pytest.fixture(scope="module")
+def G_med(ss_med):
+    return beta_het.solve_jacobian(ss_med, T=300)
+
+
+@pytest.mark.slow
+def test_median_calibration_steady_state_and_target_fits(ss_med):
+    assert abs(ss_med['asset_mkt']) < 1e-8
+    assert abs(ss_med['goods_mkt']) < 1e-6
+    assert abs(ss_med['A'] + ss_med['B'] - 14.0) < 1e-8
+    assert ss_med['B'] == pytest.approx(1.212, abs=2e-3)  # not 1.04: untargeted
+    betas = sorted(set(ss_med.internals['hh']['beta_z']))
+    assert np.allclose(betas, [0.9435, 0.9655, 0.9875], atol=2e-4)
+    assert max(betas) < beta_het.beta_cap(ss_med.toplevel)
+    ref = beta_het.refined_household_ss(ss_med)
+    m = beta_het.wealth_moments(ref)
+    assert m['median_liquid_to_income'] == pytest.approx(0.205, abs=3e-3)
+    assert m['median_illiquid_to_income'] == pytest.approx(4.69, abs=0.03)
+    assert m['poor_htm'] == pytest.approx(0.060, abs=2e-3)
+    mpc = {d: distributional.aggregate_mpc(ref, beta_het.rebate_frac(ss_med, d))
+           for d in (500, 1000, 1500)}
+    assert mpc[500] == pytest.approx(0.126, abs=2e-3)
+    assert mpc[1000] == pytest.approx(0.110, abs=2e-3)
+    assert mpc[1500] == pytest.approx(0.101, abs=2e-3)
+
+
+@pytest.mark.slow
+def test_median_calibration_spending_multiplier_stays_positive(ss_med, G_med):
+    """The issue #5 sign: with every beta in 0.94-0.99, cumulative output
+    stays positive for 40 quarters at rho 0.8 and 0.9 (default: negative
+    from q3)."""
+    for rho, impact, cum20 in ((0.8, 0.274, 0.213), (0.9, 0.216, 0.208)):
+        r = model.shock('fiscal_spending', 0.01, rho, ss=ss_med, G_jac=G_med)
+        g = 100 * r['shock']
+        assert r['Y'][0] / g[0] == pytest.approx(impact, abs=2e-3)
+        assert r['Y'][:20].sum() / g[:20].sum() == pytest.approx(cum20, abs=2e-3)
+        assert (r['Y'][:40] > 0).all()
+    m = model.shock('monetary', -0.0025, 0.61, ss=ss_med, G_jac=G_med)
+    assert m['Y'][0] == pytest.approx(0.360, abs=2e-3)
