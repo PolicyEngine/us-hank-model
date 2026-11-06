@@ -152,3 +152,54 @@ def test_variant_monetary_easing_is_expansionary_but_smaller(ss_v, G_v, ss, G_ja
     assert d['Y'][0] == pytest.approx(0.493, abs=2e-3)
     assert r['C'][0] > d['C'][0] and r['I'][0] < d['I'][0]
     assert r['pi'][0] > 0
+
+
+# --- median-wealth targets (fast, demo grids) ---------------------------------
+
+def test_uniform_offsets_are_equal_mass_bin_midpoints():
+    assert beta_het.uniform_offsets(1) == (0.0,)
+    assert np.allclose(beta_het.uniform_offsets(3), (-2 / 3, 0.0, 2 / 3))
+    assert np.allclose(beta_het.uniform_offsets(5), (-0.8, -0.4, 0.0, 0.4, 0.8))
+
+
+def test_median_targets_are_the_kv2014_scf_ratios():
+    t = beta_het.MEDIAN_TARGETS
+    assert t['median_liquid_to_income'] == pytest.approx(4 * 2629 / 52745)
+    assert t['median_illiquid_to_income'] == pytest.approx(4 * 54600 / 52745)
+    assert t['poor_htm'] == pytest.approx(0.12)
+    assert 0.15 <= t['mpc_500'] <= 0.25
+
+
+def test_median_mode_clears_the_asset_market_with_beta_alone():
+    """chi1 stays where it is put, beta clears the asset market, and Bh is
+    reset to what households hold (so it is no longer 1.04)."""
+    ss = beta_het.solve_steady_state(liquid_target='median', use_cache=False,
+                                     chi1=9.0, **DEMO)
+    assert ss['chi1'] == 9.0
+    assert abs(ss['asset_mkt']) < 1e-8
+    assert abs(ss['A'] + ss['B'] - 14.0) < 1e-8
+    assert ss['Bh'] == pytest.approx(ss['B'], abs=1e-10)
+    assert abs(ss['B'] - 1.04) > 0.1
+    assert abs(ss['goods_mkt']) < 1e-6
+    assert abs(ss['fisher']) < 1e-10 and abs(ss['wnkpc']) < 1e-10
+    top = max(ss.internals['hh']['beta_z'])
+    assert top < beta_het.beta_cap(ss.toplevel)
+
+
+def test_wealth_moments_are_consistent_with_the_aggregates():
+    ss = _default_demo_ss()
+    m = beta_het.wealth_moments(ss)
+    assert m['income'] == pytest.approx(ss['w'] * ss['N'])
+    assert m['mean_liquid_to_income'] * m['income'] == pytest.approx(ss['B'], rel=1e-8)
+    assert m['mean_illiquid_to_income'] * m['income'] == pytest.approx(ss['A'], rel=1e-8)
+    assert 0 <= m['poor_htm'] <= m['htm'] <= 1
+    assert m['median_liquid_to_income'] <= m['mean_liquid_to_income']
+    htm = distributional.hand_to_mouth_breakdown(ss, beta_het.HTM_CUTOFF)
+    assert m['poor_htm'] == pytest.approx(htm['poor_hand_to_mouth_share'])
+    assert m['htm'] == pytest.approx(htm['hand_to_mouth_share'])
+
+
+def test_weighted_median_interpolates_inside_the_crossing_cell():
+    g = np.array([0.0, 1.0, 2.0])
+    assert beta_het._weighted_median(g, np.array([0.6, 0.2, 0.2])) == 0.0
+    assert beta_het._weighted_median(g, np.array([0.25, 0.5, 0.25])) == pytest.approx(0.5)
