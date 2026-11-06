@@ -110,6 +110,42 @@ BETA_HET_CALIBRATION = {
     'beta_switch': 1 / 200,
 }
 
+#: Median-wealth targets (``liquid_target='median'``). Wealth ratios are to
+#: MEAN quarterly pre-tax labour income (``w * N`` in the model), the
+#: normalisation of Kaplan & Violante (2014, Econometrica 82(4), Table III and
+#: fn. 28), from the 2001 Survey of Consumer Finances, households aged 22-59,
+#: top 5% by net worth excluded: mean earnings plus benefits $52,745, median
+#: net liquid wealth $2,629, median net illiquid wealth $54,600.
+SCF_2001_KV = {'mean_earnings': 52745.0, 'median_liquid': 2629.0,
+               'median_illiquid': 54600.0}
+MEDIAN_TARGETS = {
+    # 4 x 2,629 / 52,745 = 0.199 quarters of mean labour income
+    'median_liquid_to_income': 4 * SCF_2001_KV['median_liquid'] / SCF_2001_KV['mean_earnings'],
+    # 4 x 54,600 / 52,745 = 4.14 quarters of mean labour income
+    'median_illiquid_to_income': 4 * SCF_2001_KV['median_illiquid'] / SCF_2001_KV['mean_earnings'],
+    # Poor hand-to-mouth share: Kaplan, Violante & Weidner (2014, BPEA),
+    # about 12% of US households.
+    'poor_htm': 0.12,
+    # Quarterly MPC out of $500 per household: inside the 0.15-0.25 range.
+    'mpc_500': 0.20,
+}
+
+#: Poor hand-to-mouth in the model: at the liquid kink (b on the first grid
+#: point, b = 0) and with illiquid wealth below this, in model units. 0.05 is
+#: about $1,000 at the 2001 SCF scale (0.05 / 0.66 x 52,745 / 4).
+POOR_HTM_ILLIQUID_CUTOFF = 0.05
+
+#: Second calibration of the variant (issue #8, round 4): median wealth
+#: targets, ``liquid_target='median'``. PLACEHOLDER until the sweep lands.
+MEDIAN_CALIBRATION = {
+    **_model.PRODUCTION_CALIBRATION,
+    'beta_offsets': (-2 / 3, 0.0, 2 / 3),
+    'beta_masses': (1 / 3, 1 / 3, 1 / 3),
+    'beta_spread': 0.02,
+    'beta_switch': 1 / 200,
+    'chi1': 12.0,
+}
+
 #: Starting guess for the (beta, chi1) solve: the default's.
 _SS_GUESS = {'beta': 0.976, 'chi1': 6.5}
 #: The calibrated variant's solution, used as the guess at the calibrated
@@ -241,32 +277,79 @@ def build_models():
 
 def solve_steady_state(beta_spread: float | None = None,
                        guess: dict | None = None,
-                       use_cache: bool = True, **overrides):
+                       use_cache: bool = True,
+                       liquid_target: str = 'aggregate', **overrides):
     """General-equilibrium steady state of the variant.
 
-    Solves (beta, chi1) for the default's targets (asset market clears; B =
-    Bh = 1.04) at the given ``beta_spread`` (default: the calibrated one).
-    ``guess`` seeds the solver (continuation); ``overrides`` replace
-    calibration entries (e.g. ``beta_offsets``, ``beta_masses``, grid sizes).
+    ``liquid_target='aggregate'`` (the first version of this variant, and the
+    default model's targets): solves (beta, chi1) so the asset market clears
+    at total wealth 14 and liquid wealth B = Bh = 1.04.
+
+    ``liquid_target='median'`` (``MEDIAN_CALIBRATION``): drops the aggregate
+    liquid-wealth target, as Kaplan & Violante (2014, fn. 28) do. ``chi1`` is
+    then a parameter (set outside the solve, with the beta spread, to the
+    median-wealth targets), ``beta`` alone clears the asset market, and
+    ``Bh`` is reset to the household liquid wealth the solve produces, so the
+    illiquid fund's equity share ``pshare = p / (tot_wealth - Bh)`` stays
+    consistent with what households hold. In the steady state ``Bh`` enters
+    nothing else (``ra = r`` whatever ``pshare`` is).
+
+    At the given ``beta_spread`` (default: the calibrated one). ``guess``
+    seeds the solver (continuation); ``overrides`` replace calibration
+    entries (e.g. ``beta_offsets``, ``beta_masses``, ``chi1``, grid sizes).
     """
-    cal = dict(BETA_HET_CALIBRATION)
+    if liquid_target not in ('aggregate', 'median'):
+        raise ValueError(f"liquid_target must be 'aggregate' or 'median', "
+                         f"not {liquid_target!r}")
+    base = MEDIAN_CALIBRATION if liquid_target == 'median' else BETA_HET_CALIBRATION
+    cal = dict(base)
     cal.update(overrides)
     if beta_spread is not None:
         cal['beta_spread'] = float(beta_spread)
-    key = ('ss', tuple(sorted((k, v) for k, v in cal.items())))
+    key = ('ss', liquid_target, tuple(sorted((k, v) for k, v in cal.items())))
     if use_cache and key in _CACHE:
         return _CACHE[key]
-    if guess is None:
-        guess = (_CALIBRATED_GUESS if cal['beta_spread'] > 0.05
-                 else _SS_GUESS)
     ss_m, m = build_models()
-    cali = ss_m.solve_steady_state(
-        cal, unknowns=dict(guess),
-        targets={'asset_mkt': 0., 'B': 'Bh'}, solver='broyden_custom')
+    if liquid_target == 'aggregate':
+        if guess is None:
+            guess = (_CALIBRATED_GUESS if cal['beta_spread'] > 0.05
+                     else _SS_GUESS)
+        cali = ss_m.solve_steady_state(
+            cal, unknowns=dict(guess),
+            targets={'asset_mkt': 0., 'B': 'Bh'}, solver='broyden_custom')
+    else:
+        cal.pop('beta', None)
+        lo, hi = beta_bracket(cal) if guess is None else guess
+        cali = ss_m.solve_steady_state(
+            cal, unknowns={'beta': (lo, hi)}, targets={'asset_mkt': 0.},
+            solver='brentq', ttol=1e-12)
+        cali = dict(cali.toplevel)
+        cali['Bh'] = cali['B']
     ss = m.steady_state(cali)
     if use_cache:
         _CACHE[key] = ss
     return ss
+
+
+def beta_cap(cal) -> float:
+    """1 / (1 + r): no type's discount factor may reach it (the illiquid
+    return is r in the steady state, so a type at the cap never stops
+    accumulating)."""
+    return 1.0 / (1.0 + cal['r'])
+
+
+def beta_bracket(cal) -> tuple:
+    """Bracket for the centre ``beta`` in the median-mode solve: the most
+    patient type stays strictly below ``beta_cap``."""
+    top = cal['beta_spread'] * max(cal['beta_offsets'])
+    return 0.90, beta_cap(cal) - top - 1e-4
+
+
+def uniform_offsets(n: int) -> tuple:
+    """Offsets of an ``n``-point equal-mass discretisation of a uniform
+    distribution on [beta - spread, beta + spread] (Carroll, Slacalek,
+    Tokuoka & White 2017): the midpoints of ``n`` equal-probability bins."""
+    return tuple((2 * j + 1 - n) / n for j in range(n))
 
 
 def solve_jacobian(ss, T: int = 300):
@@ -385,3 +468,39 @@ def calibrate_beta_spread(target: float = MPC_TARGET,
             flo /= 2
         hi, fhi, ghi = x, fx, gx
     return x, ss_x, path
+
+
+# --- distribution moments (median-wealth targets) -----------------------------
+
+def _weighted_median(grid, mass):
+    """Median of a distribution on ``grid`` (lottery weights ``mass``),
+    linear inside the cell where the cumulative mass crosses one half."""
+    cum = np.cumsum(mass) / mass.sum()
+    j = int(np.searchsorted(cum, 0.5))
+    if j == 0:
+        return float(grid[0])
+    lo = cum[j - 1]
+    return float(grid[j - 1] + (grid[j] - grid[j - 1]) * (0.5 - lo) / (cum[j] - lo))
+
+
+def wealth_moments(ss) -> dict:
+    """Median and mean liquid and illiquid wealth over mean quarterly pre-tax
+    labour income (``w * N``), and the hand-to-mouth shares at the liquid
+    kink: the moments ``MEDIAN_TARGETS`` refers to. Works on ``ss`` or on a
+    ``refined_household_ss`` output (whose ``toplevel`` carries the same
+    prices)."""
+    h = ss.internals['hh']
+    D, b_grid, a_grid = h['D'], h['b_grid'], h['a_grid']
+    inc = float(ss['w'] * ss['N'])
+    at_kink = D[:, 0, :]
+    poor = float(at_kink[:, a_grid < POOR_HTM_ILLIQUID_CUTOFF].sum())
+    return {
+        'income': inc,
+        'median_liquid_to_income': _weighted_median(b_grid, D.sum(axis=(0, 2))) / inc,
+        'median_illiquid_to_income': _weighted_median(a_grid, D.sum(axis=(0, 1))) / inc,
+        'mean_liquid_to_income': float(np.vdot(D.sum(axis=(0, 2)), b_grid)) / inc,
+        'mean_illiquid_to_income': float(np.vdot(D.sum(axis=(0, 1)), a_grid)) / inc,
+        'htm_kink': float(at_kink.sum()),
+        'poor_htm': poor,
+        'wealthy_htm': float(at_kink.sum()) - poor,
+    }
