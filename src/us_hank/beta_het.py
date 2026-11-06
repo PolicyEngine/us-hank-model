@@ -130,10 +130,16 @@ MEDIAN_TARGETS = {
     'mpc_500': 0.20,
 }
 
-#: Poor hand-to-mouth in the model: at the liquid kink (b on the first grid
-#: point, b = 0) and with illiquid wealth below this, in model units. 0.05 is
-#: about $1,000 at the 2001 SCF scale (0.05 / 0.66 x 52,745 / 4).
-POOR_HTM_ILLIQUID_CUTOFF = 0.05
+#: Hand-to-mouth cutoff, model units, for both assets: liquid wealth below it
+#: is hand-to-mouth, and hand-to-mouth with illiquid wealth below it too is
+#: POOR hand-to-mouth (the Kaplan-Violante-Weidner split). 0.05 is about
+#: $1,000 at the 2001 SCF scale (0.05 / 0.66 x 52,745 / 4), roughly the
+#: "half of earnings per pay period" KV (2014, section 4.2) use in the data
+#: for a monthly pay period at median earnings ($41,000 / 12 / 2 = $1,700 /
+#: 2). It is ``distributional.DEFAULT_HTM_THRESHOLD``. The mass exactly at
+#: the liquid kink (b = 0) is reported too, but it depends on the grid
+#: (lottery weights), so it is not the target.
+HTM_CUTOFF = 0.05
 
 #: Second calibration of the variant (issue #8, round 4): median wealth
 #: targets, ``liquid_target='median'``. PLACEHOLDER until the sweep lands.
@@ -492,15 +498,17 @@ def wealth_moments(ss) -> dict:
     h = ss.internals['hh']
     D, b_grid, a_grid = h['D'], h['b_grid'], h['a_grid']
     inc = float(ss['w'] * ss['N'])
-    at_kink = D[:, 0, :]
-    poor = float(at_kink[:, a_grid < POOR_HTM_ILLIQUID_CUTOFF].sum())
+    liq = D[:, b_grid < HTM_CUTOFF, :]
+    htm = float(liq.sum())
+    poor = float(liq[:, :, a_grid < HTM_CUTOFF].sum())
     return {
         'income': inc,
         'median_liquid_to_income': _weighted_median(b_grid, D.sum(axis=(0, 2))) / inc,
         'median_illiquid_to_income': _weighted_median(a_grid, D.sum(axis=(0, 1))) / inc,
         'mean_liquid_to_income': float(np.vdot(D.sum(axis=(0, 2)), b_grid)) / inc,
         'mean_illiquid_to_income': float(np.vdot(D.sum(axis=(0, 1)), a_grid)) / inc,
-        'htm_kink': float(at_kink.sum()),
+        'htm': htm,
         'poor_htm': poor,
-        'wealthy_htm': float(at_kink.sum()) - poor,
+        'wealthy_htm': htm - poor,
+        'htm_kink': float(D[:, 0, :].sum()),
     }
