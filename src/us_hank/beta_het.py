@@ -100,12 +100,17 @@ BETA_HET_CALIBRATION = {
     **_model.PRODUCTION_CALIBRATION,
     'beta_offsets': (-1.0, 0.0),
     'beta_masses': (1 / 3, 2 / 3),
-    'beta_spread': None,  # set below once calibrated; see calibrate_beta_spread
+    # calibrate_beta_spread() at MPC_TARGET, production grids (CI run
+    # 42145287339): impatient beta = 0.98283 - 0.13041 = 0.85242.
+    'beta_spread': 0.1304144180026553,
     'beta_switch': 1 / 200,
 }
 
-#: Starting guess for the (beta, chi1) solve. The default's solution.
+#: Starting guess for the (beta, chi1) solve: the default's.
 _SS_GUESS = {'beta': 0.976, 'chi1': 6.5}
+#: The calibrated variant's solution, used as the guess at the calibrated
+#: spread: Broyden from the default's guess does not converge that far out.
+_CALIBRATED_GUESS = {'beta': 0.982831393610993, 'chi1': 8.065188075253275}
 
 _CACHE: dict = {}
 
@@ -230,7 +235,8 @@ def build_models():
     return ss_m, m
 
 
-def solve_steady_state(beta_spread: float | None = None, guess: dict | None = None,
+def solve_steady_state(beta_spread: float | None = None,
+                       guess: dict | None = None,
                        use_cache: bool = True, **overrides):
     """General-equilibrium steady state of the variant.
 
@@ -243,14 +249,15 @@ def solve_steady_state(beta_spread: float | None = None, guess: dict | None = No
     cal.update(overrides)
     if beta_spread is not None:
         cal['beta_spread'] = float(beta_spread)
-    if cal['beta_spread'] is None:
-        raise ValueError("beta_spread is not calibrated yet; pass one")
     key = ('ss', tuple(sorted((k, v) for k, v in cal.items())))
     if use_cache and key in _CACHE:
         return _CACHE[key]
+    if guess is None:
+        guess = (_CALIBRATED_GUESS if cal['beta_spread'] > 0.05
+                 else _SS_GUESS)
     ss_m, m = build_models()
     cali = ss_m.solve_steady_state(
-        cal, unknowns=dict(guess or _SS_GUESS),
+        cal, unknowns=dict(guess),
         targets={'asset_mkt': 0., 'B': 'Bh'}, solver='broyden_custom')
     ss = m.steady_state(cali)
     if use_cache:
