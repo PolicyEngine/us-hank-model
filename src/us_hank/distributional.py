@@ -38,9 +38,10 @@ DEFAULT_HTM_THRESHOLD = 0.05
 
 # Windfall used to define MPCs, as a fraction of mean quarterly post-tax
 # labour income. 0.25 is 0.106 in model units (10.6% of quarterly GDP per
-# model household). Mapped to US GDP per head or per household that is
-# several thousand dollars -- LARGER than the 2001 ($300-600) and 2008
-# (about $900 on average) rebates the empirical MPC literature measures, so
+# model household). Mapped to US GDP (about $31T a year, 2026) that is about
+# $2,400 per head (342M people) or about $6,200 per household (133M
+# households) -- LARGER than the 2001 ($300-600) and 2008 (about $900 on
+# average) rebates the empirical MPC literature measures, so
 # with a concave policy the MPC here is biased down against that literature.
 # Changing the default changes the reported 0.058; that is a decision, not a
 # docs fix.

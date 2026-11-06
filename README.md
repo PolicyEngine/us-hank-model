@@ -176,7 +176,8 @@ economics. MPCs are therefore measured out of an **explicit windfall** of
 stated economic size (default: 25% of mean quarterly post-tax labour income,
 which is 0.106 in model units, i.e. 10.6% of quarterly GDP per model
 household), giving an aggregate quarterly MPC of **0.058**. Mapped to US
-GDP per head or per household that windfall is several thousand dollars —
+GDP (about $31T a year) that windfall is about $2,400 per head or about
+$6,200 per household —
 larger than the 2001 ($300–600) and 2008 (about $900 on average) rebates
 the empirical MPC literature measures. Because MPCs fall with windfall size
 (the policy is concave, and a test asserts it), part of the gap to the US
