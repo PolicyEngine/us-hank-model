@@ -79,13 +79,17 @@ from us_hank import distributional as _dist
 #: Target for the quarterly MPC out of a $1,000-per-household rebate, measured
 #: on the refined liquid grid (``refined_aggregate_mpc_beta_het``). 0.20 is the
 #: middle of the 0.15-0.25 range of the US rebate evidence. The top end is the
-#: figure Kaplan & Violante (2014, Econometrica 82(4), 1199-1239) calibrate
-#: their model to: about 25% of a stimulus payment spent on nondurables in the
-#: quarter of receipt (the 2001 rebates; Johnson, Parker & Souleles 2006).
-#: The bottom end is the smaller response to the 2008 payments, roughly 15%
-#: within the quarter in the studies Kaplan & Violante (2014, AER Papers &
-#: Proceedings 104(5)) cite. The default model gives
-#: 0.091 on the same measure (issue #8).
+#: empirical estimate Kaplan & Violante (2014, Econometrica 82(4), 1199-1239)
+#: compare their model with: about 25% of a stimulus payment spent on
+#: nondurables in the quarter of receipt (the 2001 rebates; Johnson, Parker &
+#: Souleles 2006). KV do NOT target it: they calibrate beta to median illiquid
+#: wealth and the transaction cost to a hand-to-mouth share of about 1/3, and
+#: their model's untargeted output is a rebate coefficient of 15% and an MPC
+#: out of a surprise $500 of about 20%, falling with the payment size (to 3%
+#: at $5,000). So 0.20 at $1,000 is at the high end of what their model gives.
+#: The bottom end is the smaller response to the 2008 payments (Kaplan &
+#: Violante 2014, AER Papers & Proceedings 104(5); Parker et al. 2013). The
+#: default model gives 0.091 on the same measure (issue #8).
 MPC_TARGET = 0.20
 MPC_TARGET_DOLLARS_PER_HOUSEHOLD = 1000.0
 

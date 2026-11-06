@@ -191,7 +191,10 @@ spend more of the extra income. Monetary easing moves output by half as
 much, and investment responds far less; consumption is about the same.
 The variant is calibrated on three numbers, not estimated, and the impatient
 type's β is low (0.852 a quarter, 0.53 a year): it is a device to put the
-MPC in range, not a measured preference. Sensitivity (CI run 42145287339):
+MPC in range, not a measured preference. It sits well below published
+discount-factor distributions: Carroll, Slacalek, Tokuoka & White (2017)
+estimate quarterly β between about 0.94 and 0.98 when matching liquid
+assets, and Kaplan & Violante (2014) use a single β of 0.941 a year. Sensitivity (CI run 42145287339):
 an impatient mass of 1/4 or 1/2 needs β gaps of 0.160 or 0.099 and gives
 impact multipliers 0.403 and 0.385; halving the type-switch rate moves the
 $1,000 MPC 0.200 → 0.207.
