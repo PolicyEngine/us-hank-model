@@ -194,9 +194,33 @@ policy is concave, and a test asserts it), but the size mismatch explains
 little of the gap to the US empirical range of roughly **0.15–0.25**: at a
 $1,000–1,500 rebate per head the MPC is 0.069–0.064, and per household that
 rebate is smaller than the first liquid grid step, where the MPC is a flat
-0.075 set by the grid (the grid-step MPC). The model's MPC is low at every
-rebate size; `tests/test_distributional.py` pins these numbers. Quote the number with its windfall size, or
+0.075 set by the grid (the grid-step MPC). Quote the number with its windfall size, or
 not at all — `summary()` always ships both.
+
+**Rebate-sized MPCs need the refined liquid grid.**
+`distributional.refined_aggregate_mpc()` re-solves the household block alone,
+at the GE steady-state prices, on a liquid grid packed near the constraint
+(nB=200, pivot 0.01; nothing is recalibrated). It converges (the change from
+nB=200 to 400 is under 1e-4). Per household, $500 / $1,000 / $1,500 give
+**0.104 / 0.091 / 0.083**, against a flat 0.075 on the production grid. At the
+25% default the refined figure is 0.059 against 0.058, so the published number
+stands. `tests/test_refined_mpc.py` pins these numbers.
+
+**Why the MPC is low, even converged.** The grid explains part of the gap to
+0.15–0.25. It does not explain most of it. The model has plenty of
+constrained households: half the population ends the quarter at the liquid
+limit. But the illiquid account's adjustment cost is smooth and convex. It
+has zero marginal cost at zero adjustment, and no linear term of the kind
+Kaplan, Moll & Violante (2018) use to create an inaction region. So a
+constrained household that holds illiquid wealth just withdraws less: 59% of
+a $1,000 rebate goes into the illiquid account, and 11% is consumed
+(`distributional.windfall_allocation()`). Only 1.8% of households are
+constrained with no illiquid wealth, the group that acts close to
+hand-to-mouth (MPC 0.25). Raising the hand-to-mouth share does not help.
+Recalibrated to liquid wealth Bh = 0.5, the constrained share rises to 64%,
+yet the MPC *falls*. Seven income states instead of three also lower it
+slightly. ABRS (2021) report no MPC for this calibration, so none of this is
+a replication failure. It is a property of the calibration.
 
 **MPC by liquid quartile: Q1 and Q2 are identical by design.** Both quartile
 edges fall inside the zero-liquid-wealth atom, so Q1 and Q2 are the same
@@ -219,7 +243,7 @@ be needed for that, and this package does not compute them.
 ```bash
 pip install -e .[dev]
 pytest                # fast tests only (fiscal-path and one-asset checks)
-pytest --runslow      # full production-grid validation: 47 tests
+pytest --runslow      # full production-grid validation
 ```
 
 The `--runslow` gate covers the published-parameter comparison, market-clearing
