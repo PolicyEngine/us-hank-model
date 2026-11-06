@@ -1,8 +1,10 @@
 # us-hank-model
 
-US two-asset HANK model — a **validated replication** of Auclert, Bardóczy,
+US two-asset HANK model — a **calibrated replication** of Auclert, Bardóczy,
 Rognlie & Straub, *"Using the Sequence-Space Jacobian to Solve and Estimate
-Heterogeneous-Agent Models"* (Econometrica, 2021) — packaged for
+Heterogeneous-Agent Models"* (Econometrica, 2021): six of the seven solved
+steady-state parameters match the paper, and impulse-response magnitudes are
+not validated (see below) — packaged for
 PolicyEngine MacroMod. Built on the authors' MIT-licensed
 [sequence-jacobian](https://github.com/shade-econ/sequence-jacobian) toolkit
 (pinned at 1.0.0), with the model solved at the paper's production grid sizes
@@ -10,8 +12,9 @@ PolicyEngine MacroMod. Built on the authors' MIT-licensed
 
 ## Validation status
 
-**What is genuinely validated.** The parameters the model solves for
-internally reproduce ABRS (2021) Table B.III to the last published digit:
+**What is genuinely validated.** Six of the seven parameters the model
+solves for internally reproduce ABRS (2021) Table B.III to the last published
+digit; the seventh, φ, is 17% off (below):
 
 | Parameter | Published | Solved here | Deviation |
 |---|---|---|---|
