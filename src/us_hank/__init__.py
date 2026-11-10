@@ -1,5 +1,7 @@
 """US HANK model (Auclert, Bardoczy, Rognlie & Straub 2021) for PolicyEngine MacroMod."""
 
+# Imported first: fixes the toolkit's set-order summation (see the module).
+from us_hank import _determinism  # noqa: F401
 from us_hank import distributional, fiscal_2025, model, one_asset
 from us_hank.model import shock, solve_jacobian, solve_steady_state
 
