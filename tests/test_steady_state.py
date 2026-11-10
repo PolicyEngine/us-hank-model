@@ -33,7 +33,7 @@ def test_internally_calibrated_parameters_match_published_table(ss):
     """The real external check: ABRS (2021) Table B.III.
 
     Y, K, r, G, Bg and total wealth are calibration INPUTS -- they are hit by
-    construction and prove nothing. These seven are the parameters the model
+    construction and prove nothing. These six are the parameters the model
     solves for internally (beta and chi1 numerically, the rest analytically),
     so they are the only steady-state numbers with independent published
     values to miss.

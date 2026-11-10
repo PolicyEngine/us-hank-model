@@ -167,3 +167,57 @@ def test_summary_keys(ss):
     assert s['mpc_windfall_frac_of_quarterly_income'] == 0.25
     assert s['mpc_windfall_model_units'] == pytest.approx(
         0.25 * s['mean_quarterly_labour_income'])
+
+
+def test_default_mpc_is_pinned(ss):
+    """The published 0.058 (windfall = 25% of quarterly income)."""
+    assert distributional.aggregate_mpc(ss) == pytest.approx(0.0578, abs=1e-3)
+
+
+# US GDP ~$31T a year (2026); 342M people, 133M households.
+_Q_GDP_PER_HEAD = 31e12 / 342e6 / 4
+_Q_GDP_PER_HOUSEHOLD = 31e12 / 133e6 / 4
+
+
+def _frac_for_dollars(ss, dollars, per):
+    """Windfall_frac equal to a dollar rebate, with model Y = 1 mapped to
+    quarterly US GDP per head or per household."""
+    return dollars / per / distributional.mean_quarterly_labour_income(ss)
+
+
+def test_rebate_scale_mpc_is_still_far_below_the_empirical_range(ss):
+    """The 2001/2008 rebate literature measures quarterly MPCs of roughly
+    0.15-0.25 out of $300-1,500. Moving this model's windfall down to that
+    size does NOT close the gap, so the 25% default is not what makes the
+    model's MPC low.
+
+    Per head, $1,000-1,500 is 10-16% of quarterly income: MPC 0.069-0.064
+    (vs 0.058 at the default). Per household it is 4-6%, which is BELOW the
+    first liquid grid step (b_grid[1] = 0.0286 = 6.7% of income): there the
+    arc MPC is the slope of the first grid segment, constant at 0.075 for
+    every windfall under that step, i.e. the grid-step MPC (0.076 at nB=50,
+    rising to 0.100 at nB=150). Small-rebate MPCs are a grid property here;
+    test_refined_mpc.py measures them on a converged liquid grid (0.104 /
+    0.091 / 0.083 at $500 / 1,000 / 1,500 per household).
+    """
+    lo = _frac_for_dollars(ss, 1000, _Q_GDP_PER_HEAD)
+    hi = _frac_for_dollars(ss, 1500, _Q_GDP_PER_HEAD)
+    assert lo == pytest.approx(0.104, abs=2e-3)
+    assert hi == pytest.approx(0.156, abs=3e-3)
+    m_lo = distributional.aggregate_mpc(ss, lo)
+    m_hi = distributional.aggregate_mpc(ss, hi)
+    assert m_lo == pytest.approx(0.0688, abs=1.5e-3)
+    assert m_hi == pytest.approx(0.0638, abs=1.5e-3)
+
+    h = ss.internals['hh']
+    income = distributional.mean_quarterly_labour_income(ss)
+    first_step_frac = float(h['b_grid'][1] - h['b_grid'][0]) / income
+    hh_lo = _frac_for_dollars(ss, 1000, _Q_GDP_PER_HOUSEHOLD)
+    hh_hi = _frac_for_dollars(ss, 1500, _Q_GDP_PER_HOUSEHOLD)
+    assert hh_hi < first_step_frac
+    m_hh = [distributional.aggregate_mpc(ss, f) for f in (hh_lo, hh_hi)]
+    assert m_hh[0] == pytest.approx(m_hh[1], rel=1e-9)  # flat: one segment
+    assert m_hh[0] == pytest.approx(0.0751, abs=1.5e-3)
+
+    for m in (m_lo, m_hi, *m_hh):
+        assert m < 0.10  # well below the 0.15-0.25 range either way
