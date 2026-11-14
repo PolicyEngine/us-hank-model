@@ -1,6 +1,14 @@
 """One-asset HANK (fast variant), same interface as ``us_hank.model``.
 
-Uses ``sequence_jacobian.examples.hank``. Exogenous instruments are ``rstar``
+Uses the blocks of ``sequence_jacobian.examples.hank``, solved on the grid of
+the toolkit's own one-asset notebook (``notebooks/hank.ipynb``: 7 income
+states, 500 asset points) rather than the packaged ``dag()`` demo grid (2
+income states, 10 asset points). The demo grid is not converged: it moves
+the impact output response to a -25bp-per-quarter cut (rho 0.61) from 0.191
+to 0.246 (+29%) and to a 0.01 TFP shock (rho 0.9) from 0.576 to 0.450
+(-22%). The answer is grid-stable from 100 asset points.
+
+Exogenous instruments are ``rstar``
 and ``Z`` only — this DAG has no G, transfer, or tax-rate instrument
 (Tax = r*B is endogenous), so only 'monetary' and 'productivity' shocks are
 available. There is no capital, so no 'I' in the IRFs.
@@ -9,7 +17,17 @@ available. There is no capital, so no 'I' in the IRFs.
 from __future__ import annotations
 
 import numpy as np
+from sequence_jacobian import create_model
 from sequence_jacobian.examples import hank as oa
+
+#: The toolkit example's calibration with the notebook's grid (nS=7, nA=500)
+#: in place of the demo grid (nS=2, nA=10). Every other value is the
+#: example's own.
+PRODUCTION_CALIBRATION = {
+    'r': 0.005, 'rstar': 0.005, 'eis': 0.5, 'frisch': 0.5, 'B': 5.6,
+    'mu': 1.2, 'rho_s': 0.966, 'sigma_s': 0.5, 'kappa': 0.1, 'phi': 1.5,
+    'Y': 1., 'Z': 1., 'pi': 0., 'nS': 7, 'amax': 150, 'nA': 500,
+}
 
 UNKNOWNS = ['w', 'Y', 'pi']
 TARGETS = ['asset_mkt', 'goods_mkt', 'nkpc_res']
@@ -23,7 +41,18 @@ _CACHE: dict = {}
 def solve_steady_state(use_cache: bool = True):
     if use_cache and 'ss' in _CACHE:
         return _CACHE['ss']
-    _, ss, model, _, _, _ = oa.dag()
+    household = oa.hh.add_hetinputs(
+        [oa.transfers, oa.wages, oa.make_grids]).add_hetoutputs(
+        [oa.labor_supply])
+    model = create_model([household, oa.firm, oa.monetary, oa.fiscal,
+                          oa.mkt_clearing, oa.nkpc], name='One-Asset HANK')
+    ss_model = create_model([household, oa.firm, oa.monetary, oa.fiscal,
+                             oa.mkt_clearing, oa.nkpc_ss],
+                            name='One-Asset HANK SS')
+    cali = ss_model.solve_steady_state(
+        dict(PRODUCTION_CALIBRATION), unknowns={'beta': 0.986, 'vphi': 0.8},
+        targets={'asset_mkt': 0., 'NE': 1.}, solver='broyden_custom')
+    ss = model.steady_state(cali)
     _CACHE['model'] = model
     _CACHE['ss'] = ss
     return ss
