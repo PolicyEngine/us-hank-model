@@ -48,3 +48,16 @@ def test_no_investment_series():
 def test_no_fiscal_instrument():
     with pytest.raises(ValueError):
         one_asset.shock('fiscal_spending', 0.01, 0.8)
+
+
+def test_solved_on_the_notebook_grid_not_the_demo_grid():
+    """The packaged example's dag() uses 2 income states and 10 asset points;
+    the toolkit's own one-asset notebook uses 7 and 500. Regression pins on
+    the notebook grid (measured 14 Nov 2026, sequence-jacobian 1.0.0); the
+    demo grid gave 0.246 and 0.450, which these bounds reject."""
+    ss = one_asset.solve_steady_state()
+    assert (ss['nS'], ss['nA']) == (7, 500)
+    m = one_asset.shock('monetary', -0.0025, 0.61, T=300)
+    z = one_asset.shock('productivity', 0.01, 0.9, T=300)
+    assert m['Y'][0] == pytest.approx(0.1908, abs=2e-3)
+    assert z['Y'][0] == pytest.approx(0.5755, abs=2e-3)
