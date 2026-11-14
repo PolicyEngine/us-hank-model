@@ -41,8 +41,12 @@ calibration.
 **What is hit by construction and proves nothing.** Y=1, K=10, r=1.25%
 quarterly, total wealth 14 (3.5× annual GDP), Bg=2.8 and G=0.2 are calibration
 *inputs*. They are imposed, and (Z, α, μp, τ, φ) are backed out to make them
-consistent. Do not read them as a successful replication; the table above is
-the replication.
+consistent. Do not read them as a successful replication. Four of the six
+parameters in the table above are also closed-form in these inputs
+(`partial_ss` and `fiscal`): mc = 1 − r(p − K)/Y = 0.985 with p = 14 − 2.8,
+so μp = 1/mc = 1.015228, α = (r + δ)K/(Y·mc) = 0.329949, Z = Y·K^(−α) =
+0.46779, w = mc(1 − α)Y = 0.66 and τ = (r·Bg + G)/(w·N) = 0.356061. They
+match whenever the inputs do. Only β and χ1 test the household solve.
 
 **Known discrepancy — φ (labour disutility).** Table B.III publishes
 φ = 2.073; this DAG's `union_ss` block yields 1.7135, a 17% gap, and it does
@@ -65,7 +69,9 @@ and its *one-asset* test, not from the paper. Treat IRF magnitudes as this
 implementation's output, not as a reproduced published result.
 
 Responses are exactly linear in shock size (machine precision) — that is a
-property of the sequence-space method, not evidence about the economy.
+property of the sequence-space method, not evidence about the economy. The
+model itself is not linear at the sizes quoted below; see "The spending
+numbers are first-order".
 
 ## Scope — read this
 
@@ -124,6 +130,25 @@ the cumulative multiplier over 20 quarters is −0.015. At rho 0.9 (PolicyEngine
 Macro's hosted default) they are 0.075 and −0.032. No published IRF for this
 calibration gates these numbers; `tests/test_scenarios.py` pins them as
 regression values only.
+
+### The spending numbers are first-order
+
+Every spending figure in this README, including the β-het tables, is from the
+linear (first-order) IRF. The nonlinear check below is for the default
+calibration only. On the model's own
+nonlinear perfect-foresight transition, a 1%-of-GDP rise in G (ρ 0.8) gives
+an impact multiplier of 0.251, not 0.175, and the labour tax rises 0.30pp on
+impact, not 0.51pp. A 1%-of-GDP cut lowers output by 0.125% on impact (a
+multiplier of 0.125). The second-order term is
+about +0.06% of GDP and keeps its sign when the shock flips, so at this size
+the linear IRF understates the output gain from a rise by about 30% and
+overstates the loss from a cut. At 2% of GDP the nonlinear solve does not
+converge at default settings, so only the linear IRF exists there. A
+25bp-per-quarter monetary shock (ρ 0.61) is close to linear: impact output +0.511
+for the cut and −0.477 for the rise, against 0.493 linear. These are pinned
+in `tests/test_scenarios.py`
+(`test_spending_multiplier_is_strongly_nonlinear_at_1pct_of_gdp`,
+`test_monetary_nonlinearity_at_100bp_annualised_is_small`).
 
 ## Fiscal 2025 variant
 
@@ -287,6 +312,13 @@ irf1 = one_asset.shock('monetary', -0.0025, 0.61)  # fast one-asset variant
 Units: `Y`, `C`, `I` are % deviations from steady state; `pi`, `r` and `tax`
 are quarterly-rate/rate deviations in percentage points. `size` is always a
 LEVEL change in the driving variable — see the table above.
+
+`r` is the ex-post real
+return on bonds held into the quarter, r_t = (1 + i_{t−1})/(1 + π_t) − 1. On
+impact it moves only with the inflation surprise (r_0 = −(1 + r)·π_0); the
+policy move itself shows from quarter 1. For the −25bp-per-quarter cut
+(ρ 0.61), `r` falls 0.08pp on impact and 0.18pp in quarter 1, while the
+ex-ante real rate i_t − π_{t+1} falls 0.18pp on impact.
 
 ## Distributional output — read the conventions
 
