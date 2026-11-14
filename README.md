@@ -28,13 +28,6 @@ digit; the seventh, φ, is 17% off (below):
 χ1 is the strongest check: it is solved numerically from a 6.5 starting guess
 and lands on the published 6.416.
 
-Only β and χ1 test the household solve. The other four are closed-form
-functions of the calibration inputs (the `partial_ss` and `fiscal` blocks):
-mc = 1 − r(p − K)/Y = 0.985 with p = 14 − 2.8, so μp = 1/mc = 1.015228,
-α = (r + δ)K/(Y·mc) = 0.329949, Z = Y·K^(−α) = 0.46779, w = mc(1 − α)Y = 0.66
-and τ = (r·Bg + G)/(w·N) = 0.356061. They match whenever the inputs do, so
-they confirm the inputs and the block algebra, not the solution.
-
 Market clearing: asset market 3.2e-13 (a solver target), goods market 3.3e-08
 (**untargeted** — it holds only by Walras' law, so it is the honest measure of
 steady-state accuracy and is five orders looser than the asset market).
@@ -48,8 +41,12 @@ calibration.
 **What is hit by construction and proves nothing.** Y=1, K=10, r=1.25%
 quarterly, total wealth 14 (3.5× annual GDP), Bg=2.8 and G=0.2 are calibration
 *inputs*. They are imposed, and (Z, α, μp, τ, φ) are backed out to make them
-consistent. Do not read them as a successful replication; the table above is
-the replication.
+consistent. Do not read them as a successful replication. Four of the six
+parameters in the table above are also closed-form in these inputs
+(`partial_ss` and `fiscal`): mc = 1 − r(p − K)/Y = 0.985 with p = 14 − 2.8,
+so μp = 1/mc = 1.015228, α = (r + δ)K/(Y·mc) = 0.329949, Z = Y·K^(−α) =
+0.46779, w = mc(1 − α)Y = 0.66 and τ = (r·Bg + G)/(w·N) = 0.356061. They
+match whenever the inputs do. Only β and χ1 test the household solve.
 
 **Known discrepancy — φ (labour disutility).** Table B.III publishes
 φ = 2.073; this DAG's `union_ss` block yields 1.7135, a 17% gap, and it does
@@ -141,7 +138,8 @@ linear (first-order) IRF. The nonlinear check below is for the default
 calibration only. On the model's own
 nonlinear perfect-foresight transition, a 1%-of-GDP rise in G (ρ 0.8) gives
 an impact multiplier of 0.251, not 0.175, and the labour tax rises 0.30pp on
-impact, not 0.51pp. A 1%-of-GDP cut gives −0.125. The second-order term is
+impact, not 0.51pp. A 1%-of-GDP cut lowers output by 0.125% on impact (a
+multiplier of 0.125). The second-order term is
 about +0.06% of GDP and keeps its sign when the shock flips, so at this size
 the linear IRF understates the output gain from a rise by about 30% and
 overstates the loss from a cut. At 2% of GDP the nonlinear solve does not
