@@ -14,7 +14,7 @@ def test_monetary_easing_expansionary(ss, G_jac):
     assert irf['C'][0] > 0
     assert irf['I'][0] > 0
     assert irf['pi'][0] > 0
-    assert irf['r'][0] < 0  # real rate falls
+    assert irf['r'][0] < 0  # ex-post real rate: the inflation surprise
 
 
 def test_monetary_tightening_is_contractionary(ss, G_jac):
@@ -29,7 +29,7 @@ def test_monetary_tightening_is_contractionary(ss, G_jac):
     assert irf['C'][0] < 0
     assert irf['I'][0] < 0
     assert irf['pi'][0] < 0
-    assert irf['r'][0] > 0  # real rate rises
+    assert irf['r'][0] > 0  # ex-post real rate: the inflation surprise
 
 
 def test_productivity_shock_signs(ss, G_jac):
