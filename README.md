@@ -3,7 +3,8 @@
 US two-asset HANK model — a **calibrated replication** of Auclert, Bardóczy,
 Rognlie & Straub, *"Using the Sequence-Space Jacobian to Solve and Estimate
 Heterogeneous-Agent Models"* (Econometrica, 2021): six of the seven solved
-steady-state parameters match the paper, and impulse-response magnitudes are
+steady-state parameters match the paper directly, the seventh (φ) matches
+after a wage-markup convention conversion, and impulse-response magnitudes are
 not validated (see below) — packaged for
 PolicyEngine MacroMod. Built on the authors' MIT-licensed
 [sequence-jacobian](https://github.com/shade-econ/sequence-jacobian) toolkit
@@ -14,7 +15,8 @@ PolicyEngine MacroMod. Built on the authors' MIT-licensed
 
 **What is genuinely validated.** Six of the seven parameters the model
 solves for internally reproduce ABRS (2021) Table B.III to the last published
-digit; the seventh, φ, is 17% off (below):
+digit. The seventh, φ, is 17% below the table as solved, and matches it after
+multiplying by μw² (see "φ and the wage-markup convention" below):
 
 | Parameter | Published | Solved here | Deviation |
 |---|---|---|---|
@@ -24,6 +26,7 @@ digit; the seventh, φ, is 17% off (below):
 | α capital share | 0.33 | 0.3299492 | −5.1e-5 |
 | μp price markup | 1.015 | 1.0152284 | +2.3e-4 |
 | τ labour tax | 0.356 | 0.3560606 | +6.1e-5 |
+| φ labour disutility (× μw²) | 2.073 | 2.0733059 | +3.1e-4 |
 
 χ1 is the strongest check: it is solved numerically from a 6.5 starting guess
 and lands on the published 6.416.
@@ -41,21 +44,30 @@ calibration.
 **What is hit by construction and proves nothing.** Y=1, K=10, r=1.25%
 quarterly, total wealth 14 (3.5× annual GDP), Bg=2.8 and G=0.2 are calibration
 *inputs*. They are imposed, and (Z, α, μp, τ, φ) are backed out to make them
-consistent. Do not read them as a successful replication. Four of the six
+consistent. Do not read them as a successful replication. Four of the seven
 parameters in the table above are also closed-form in these inputs
 (`partial_ss` and `fiscal`): mc = 1 − r(p − K)/Y = 0.985 with p = 14 − 2.8,
 so μp = 1/mc = 1.015228, α = (r + δ)K/(Y·mc) = 0.329949, Z = Y·K^(−α) =
 0.46779, w = mc(1 − α)Y = 0.66 and τ = (r·Bg + G)/(w·N) = 0.356061. They
-match whenever the inputs do. Only β and χ1 test the household solve.
+match whenever the inputs do. β and χ1 test the household solve, and so does
+φ, whose closed form uses UCE, an output of the household block.
 
-**Known discrepancy — φ (labour disutility).** Table B.III publishes
-φ = 2.073; this DAG's `union_ss` block yields 1.7135, a 17% gap, and it does
-not reconcile under either the earnings-weighted or unweighted definition of
-`UCE`. It appears to be a reporting-convention difference: φ is a pure
-normalisation chosen so N=1 is optimal, this implementation is self-consistent
-(the wage Phillips residual is 7e-15 at the steady state), and no asset,
-wealth or market-clearing target depends on it. It is nonetheless unexplained
-and is deliberately **not** asserted in the test suite.
+**φ and the wage-markup convention.** This DAG's `union_ss` block solves
+φ = (1 − τ)·w·UCE / (μw·N^(1+ν)) = 1.7134759, where UCE = ∫ e·c^(−σ). That is
+the steady state of the wage Phillips curve as the published Econometrica
+online appendix writes it (Appendix B.3, Unions), with the after-tax wage term
+divided by μw, so the wage is μw times the marginal rate of substitution. The
+NBER working-paper version (w26123, eq. 69) writes the same curve with μw
+multiplying that term instead. Its steady state is φ = μw·(1 − τ)·w·UCE/N^(1+ν)
+= 2.0733059 here, which is exactly μw² = 1.21 times ours. Both versions print
+φ = 2.073 in the calibration table. So Table B.III's φ follows the working
+paper's convention, and this implementation follows the published equation,
+which is also the one that puts the wage above the MRS. The two φ values
+describe the same steady state (same β, χ1, prices and allocations). In
+dynamics, the multiplying form scales the union's wage-gap term by μw² for a
+given κw, so IRFs from code written in that convention would not be
+comparable one for one; this has not been quantified. The test suite asserts
+vphi·μw² against 2.073 and states the convention.
 
 **IRF signs are checked; magnitudes are not validated against the paper.**
 Monetary easing is expansionary, tax-financed G crowds out C and I under an
