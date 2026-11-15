@@ -282,6 +282,7 @@ irf_g['tax']           # the labour tax path that pays for it, in pp
 distributional.summary(ss)             # MPCs (with windfall size), HtM split
 
 irf1 = one_asset.shock('monetary', -0.0025, 0.61)  # fast one-asset variant
+                                                     # (toolkit notebook grid: 7 income states, 500 asset points)
 ```
 
 Units: `Y`, `C`, `I` are % deviations from steady state; `pi`, `r` and `tax`
