@@ -38,12 +38,8 @@ def test_internally_calibrated_parameters_match_published_table(ss):
     so they are the only steady-state numbers with independent published
     values to miss.
 
-    vphi is deliberately absent: the published table reports 2.073, this DAG's
-    union block yields 1.7135, and the gap is unresolved (see README). It is a
-    normalisation internal to the wage Phillips curve -- this implementation
-    is self-consistent (wnkpc = 0 at the steady state) and no asset or wealth
-    target depends on it -- but it is not asserted here, because asserting a
-    value we cannot reconcile with the paper would launder the discrepancy.
+    vphi is checked separately below: it matches the table only after a
+    wage-markup convention conversion.
     """
     published = {'beta': 0.976, 'chi1': 6.416, 'Z': 0.468, 'alpha': 0.33,
                  'mup': 1.015, 'tax': 0.356}
@@ -51,6 +47,21 @@ def test_internally_calibrated_parameters_match_published_table(ss):
         # the table is printed to 3-4 significant figures; require agreement
         # to the last published digit
         assert abs(ss[name] - target) < 5e-4, (name, ss[name], target)
+
+
+def test_vphi_matches_published_table_in_the_working_paper_convention(ss):
+    """Table B.III prints phi = 2.073. The published Econometrica appendix
+    (B.3, Unions) writes the wage Phillips curve with the after-tax wage term
+    divided by muw, as toolkit 1.0.0's union block does, so at the steady
+    state phi = (1 - tax) w UCE / (muw N^(1 + 1/frisch)) = 1.7135. The NBER
+    working paper (w26123, eq. 69) multiplies that term by muw instead, which
+    gives muw**2 times the value. The table's 2.073 is that second number.
+    This tests the solve, not just the inputs: UCE is an output of the
+    household block."""
+    vphi_published_eq = ((1 - ss['tax']) * ss['w'] * ss['UCE']
+                         / ss['muw'] / ss['N'] ** (1 + 1 / ss['frisch']))
+    assert ss['vphi'] == pytest.approx(vphi_published_eq, rel=1e-12)
+    assert abs(ss['vphi'] * ss['muw'] ** 2 - 2.073) < 5e-4, ss['vphi']
 
 
 def test_market_clearing_residual_magnitudes(ss):
