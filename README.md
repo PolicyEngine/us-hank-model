@@ -4,8 +4,10 @@ US two-asset HANK model — a **calibrated replication** of Auclert, Bardóczy,
 Rognlie & Straub, *"Using the Sequence-Space Jacobian to Solve and Estimate
 Heterogeneous-Agent Models"* (Econometrica, 2021): six of the seven solved
 steady-state parameters match the paper directly, the seventh (φ) matches
-after a wage-markup convention conversion, and impulse-response magnitudes are
-not validated (see below) — packaged for
+after a wage-markup convention conversion, and the one impulse-response
+magnitude the paper states (impact consumption after a monetary shock) is
+reproduced within about 2%; other response magnitudes are not validated (see
+below) — packaged for
 PolicyEngine MacroMod. Built on the authors' MIT-licensed
 [sequence-jacobian](https://github.com/shade-econ/sequence-jacobian) toolkit
 (pinned at 1.0.0), with the model solved at the paper's production grid sizes
@@ -69,16 +71,24 @@ given κw, so IRFs from code written in that convention would not be
 comparable one for one; this has not been quantified. The test suite asserts
 vphi·μw² against 2.073 and states the convention.
 
-**IRF signs are checked; magnitudes are not validated against the paper.**
+**IRF signs are checked; one published magnitude is reproduced.**
 Monetary easing is expansionary, tax-financed G crowds out C and I under an
 active Taylor rule, and TFP shocks are expansionary and disinflationary — all
-gated by tests. But ABRS (2021) contains **no** figure plotting Y/C/I/π
-impulse responses for the two-asset model against which magnitudes could be
-checked; its only two-asset monetary figure (Fig. 7a) plots consumption alone
-and exists to compare the linear and nonlinear solvers. The `-25bp, ρ=0.61`
-convention used in the examples here comes from the upstream repo's notebook
-and its *one-asset* test, not from the paper. Treat IRF magnitudes as this
-implementation's output, not as a reproduced published result.
+gated by tests. ABRS (2021) plots no Y/C/I/π impulse responses for the
+two-asset model, but its text states one magnitude: the impact consumption
+response to a −5pp Taylor-rule shock with quarterly persistence 0.6 is 1.46%
+on the linear solution and 1.36% on the nonlinear one (NBER working paper
+w26123, pp. 40–41, Fig. 8a; Fig. 7a in the Econometrica version). This model
+gives 1.485% (+1.7%) and 1.388% (+2.1%), and the nonlinear/linear ratio is
+0.935 against 0.932. The paper does not state the shock's units; annualised
+percentage points is inferred, since the quarterly reading gives 5.94%. Part
+of the linear gap is the wage-markup convention above (1.468% under the
+paper-era form). `tests/test_published_magnitude.py` gates these to 3%.
+No other variable, horizon or shock is compared with a published magnitude:
+output, investment, inflation and the fiscal and productivity responses are
+sign-checked only, and the impact peaks here have no hump. The
+`-25bp, ρ=0.61` convention used in the examples comes from the upstream
+repo's notebook and its *one-asset* test, not from the paper.
 
 Responses are exactly linear in shock size (machine precision) — that is a
 property of the sequence-space method, not evidence about the economy. The
@@ -420,7 +430,9 @@ pytest --runslow      # full production-grid validation
 ```
 
 The `--runslow` gate covers the published-parameter comparison, market-clearing
-residual magnitudes, IRF signs for all three shock kinds in both directions,
+residual magnitudes, the paper's one stated impulse-response magnitude
+(`tests/test_published_magnitude.py`), IRF signs for all three shock kinds in
+both directions,
 exact linearity, the period-by-period tax financing of G shocks, and the
 distributional conventions above.
 
