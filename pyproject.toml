@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "US two-asset HANK model (Auclert, Bardoczy, Rognlie & Straub 2021) packaged for PolicyEngine MacroMod: steady state, stylized shocks, and distributional output via sequence-jacobian."
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "PolicyEngine" }]
 # sequence-jacobian is pinned exactly: the replication asserts published
 # parameter values to 4 decimals, so the solver version is part of the result.
