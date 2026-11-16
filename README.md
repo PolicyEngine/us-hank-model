@@ -68,7 +68,9 @@ which is also the one that puts the wage above the MRS. The two φ values
 describe the same steady state (same β, χ1, prices and allocations). In
 dynamics, the multiplying form scales the union's wage-gap term by μw² for a
 given κw, so IRFs from code written in that convention would not be
-comparable one for one; this has not been quantified. The test suite asserts
+comparable one for one. One case is measured: impact consumption after the
+paper's monetary shock is 1.468% under the multiplying form against 1.485%
+here (see the next paragraph); nothing else is. The test suite asserts
 vphi·μw² against 2.073 and states the convention.
 
 **IRF signs are checked; one published magnitude is reproduced.**
