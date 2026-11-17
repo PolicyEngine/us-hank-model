@@ -114,3 +114,19 @@ def test_constrained_households_move_most_of_a_rebate_into_illiquid_assets(ss):
     big = distributional.windfall_allocation(r, 0.25)['constrained_with_illiquid']
     assert big['mps_liquid'] == pytest.approx(0.595, abs=1e-2)
     assert big['mpc'] == pytest.approx(0.081, abs=5e-3)
+
+
+def test_high_mpc_share_at_rebate_sizes_is_small_and_grid_converged(ss):
+    """Share of households with MPC > 0.25 out of a $500 / $1,000 / $1,500
+    rebate: 0.049 / 0.031 / 0.021, against a 0.537 hand-to-mouth share by
+    liquid wealth; share with MPC > 0.1 at $1,000: 0.463. A threshold count
+    can jump with the grid even where the mean converges, so nB=200 and 400
+    are both checked (measured identical to 4 decimals, 16 Nov 2026)."""
+    want = {500: 0.0489, 1000: 0.0314, 1500: 0.0205}
+    for nB in (200, 400):
+        rs = distributional.refined_household_ss(ss, nB=nB)
+        for dollars, share in want.items():
+            got = distributional.high_mpc_share(rs, _frac(ss, dollars))
+            assert got['share'] == pytest.approx(share, abs=3e-3), (nB, dollars)
+        above_01 = distributional.high_mpc_share(rs, _frac(ss, 1000), 0.1)
+        assert above_01['share'] == pytest.approx(0.4627, abs=5e-3), nB
