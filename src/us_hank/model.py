@@ -47,10 +47,13 @@ SHOCK_KINDS = {
 # for the third, so state it once here and let callers introspect rather than
 # hard-coding a units string of their own:
 #
-#   monetary        rstar_ss = 0.0125. A level change in the QUARTERLY policy
-#                   rate: size=-0.0025 is a 25bp-per-quarter easing, i.e.
-#                   about 100bp annualised. A 25bp annualised move, the usual
-#                   central-bank step, is size=-0.000625.
+#   monetary        rstar_ss = 0.0125. A level change in the intercept of the
+#                   quarterly nominal Taylor rule, i = rstar + phi*pi:
+#                   size=-0.0025 is a 25bp-per-quarter cut in the intercept,
+#                   about 100bp annualised. A 25bp annualised move is
+#                   size=-0.000625. The policy rate i itself moves less,
+#                   because the rule responds to the inflation the shock
+#                   causes: -13bp on impact for size=-0.0025, rho 0.61.
 #   fiscal_spending G_ss = 0.2, and Y_ss = 1, so a level change in G is also a
 #                   share of quarterly GDP: size=0.01 is 1% of GDP. Natural --
 #                   but note it is a 5% increase in G itself.
@@ -62,9 +65,12 @@ SHOCK_KINDS = {
 SHOCK_UNITS = {
     'monetary': {
         'input': 'rstar',
-        'units': 'level change in the quarterly real policy rate '
-                 '(-0.0025 = 25bp per quarter easing on impact, about '
-                 '100bp annualised; -0.000625 = 25bp annualised)',
+        'units': 'level change in the intercept of the quarterly nominal '
+                 'Taylor rule, i = rstar + phi*pi (-0.0025 = a 25bp-per-'
+                 'quarter cut in the intercept, about 100bp annualised; '
+                 '-0.000625 = 25bp annualised). The policy rate itself moves '
+                 'less, because the rule responds to the inflation the shock '
+                 'causes: 13bp on impact for a 25bp cut with persistence 0.61',
         'level_equals_pct_of_ss': False,
     },
     'fiscal_spending': {
