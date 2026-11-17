@@ -6,7 +6,8 @@ Heterogeneous-Agent Models"* (Econometrica, 2021): six of the seven solved
 steady-state parameters match the paper directly, the seventh (φ) matches
 after a wage-markup convention conversion, and the one impulse-response
 magnitude the paper states (impact consumption after a monetary shock) is
-reproduced within about 2%; other response magnitudes are not validated (see
+matched within about 2%, reading the shock in annualised points, which the
+paper does not state; other response magnitudes are not validated (see
 below) — packaged for
 PolicyEngine MacroMod. Built on the authors' MIT-licensed
 [sequence-jacobian](https://github.com/shade-econ/sequence-jacobian) toolkit
@@ -73,14 +74,15 @@ paper's monetary shock is 1.468% under the multiplying form against 1.485%
 here (see the next paragraph); nothing else is. The test suite asserts
 vphi·μw² against 2.073 and states the convention.
 
-**IRF signs are checked; one published magnitude is reproduced.**
+**IRF signs are checked; one stated magnitude is matched within about 2%.**
 Monetary easing is expansionary, tax-financed G crowds out C and I under an
 active Taylor rule, and TFP shocks are expansionary and disinflationary — all
 gated by tests. ABRS (2021) plots no Y/C/I/π impulse responses for the
 two-asset model, but its text states one magnitude: the impact consumption
 response to a −5pp Taylor-rule shock with quarterly persistence 0.6 is 1.46%
-on the linear solution and 1.36% on the nonlinear one (NBER working paper
-w26123, pp. 40–41, Fig. 8a; Fig. 7a in the Econometrica version). This model
+on the linear solution and 1.36% on the nonlinear one. These numbers are from
+the working paper's text (NBER w26123, pp. 40–41, Fig. 8a); the figure is
+Fig. 7a in the Econometrica version, whose text was not checked for them. This model
 gives 1.485% (+1.7%) and 1.388% (+2.1%), and the nonlinear/linear ratio is
 0.935 against 0.932. The paper does not state the shock's units; annualised
 percentage points is inferred, since the quarterly reading gives 5.94%. Part
