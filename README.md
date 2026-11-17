@@ -355,7 +355,7 @@ illiquid wealth above the same 0.05 cutoff. The illiquid adjustment cost has zer
 at zero adjustment, so these households absorb a windfall mainly by
 withdrawing less: about 75% of a $1,000 rebate goes to the illiquid account
 and 14% is consumed (`windfall_allocation()`). 1.9% of households are
-below the cutoff in both assets (poor hand-to-mouth). `summary()` now also returns
+below the cutoff in both assets (poor hand-to-mouth). `summary()` also returns
 `high_mpc_share`, the population share whose MPC out of the same windfall
 exceeds 0.25. It is 0.0 at the 25% default windfall. On the refined liquid
 grid it is 4.9% / 3.1% / 2.1% at $500 / $1,000 / $1,500 per household, while
