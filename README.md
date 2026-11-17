@@ -106,6 +106,11 @@ three read naturally; the third is a trap:
 | `fiscal_spending` | `G` | 0.2 | 1% of quarterly GDP (Y=1), i.e. a 5% rise in G |
 | `productivity` | `Z` | **0.468** | a **2.14%** TFP improvement — *not* 1% |
 
+A monetary `size` moves the rule's intercept (`i = rstar + φ·π`, with φ here
+the Taylor coefficient 1.5). The policy rate falls less than `size` because
+the rule reacts to the higher inflation: 0.13pp on impact for the
+−25bp-per-quarter example.
+
 Every IRF returns `shock_pct_of_ss` and a `units` string, and
 `model.SHOCK_UNITS` carries the same metadata, so no caller needs to hard-code
 a units description. Describing `size=0.01` on `productivity` as "a 1% TFP
@@ -329,7 +334,7 @@ LEVEL change in the driving variable — see the table above.
 `r` is the ex-post real
 return on bonds held into the quarter, r_t = (1 + i_{t−1})/(1 + π_t) − 1. On
 impact it moves only with the inflation surprise (r_0 = −(1 + r)·π_0); the
-policy move itself shows from quarter 1. For the −25bp-per-quarter cut
+policy move itself shows from quarter 1. For the −25bp-per-quarter intercept cut
 (ρ 0.61), `r` falls 0.08pp on impact and 0.18pp in quarter 1, while the
 ex-ante real rate i_t − π_{t+1} falls 0.18pp on impact.
 
