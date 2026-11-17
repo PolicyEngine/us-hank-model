@@ -24,7 +24,7 @@ jobs:
       - name: Fast tests
         run: pytest -q
       # The production-grid suite (steady state, Jacobian, scenario sweep,
-      # nonlinear transition paths) takes about 30s on CI, so it runs on
+      # nonlinear transition paths) takes about 5 minutes on CI, so it runs on
       # every PR as well: a gate that only runs after merge protects nothing.
       - name: Full production-grid validation (slow suite, every PR)
         timeout-minutes: 20

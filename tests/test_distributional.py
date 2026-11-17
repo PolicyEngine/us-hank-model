@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from us_hank import distributional, model
+from us_hank import beta_het, distributional, model
 
 pytestmark = pytest.mark.slow
 
@@ -195,13 +195,13 @@ def test_hand_to_mouth_by_liquid_wealth_is_not_high_mpc(ss):
 
 
 def test_default_mpc_is_pinned(ss):
-    """The published 0.058 (windfall = 25% of quarterly income)."""
+    """The README's 0.058 (windfall = 25% of quarterly income)."""
     assert distributional.aggregate_mpc(ss) == pytest.approx(0.0578, abs=1e-3)
 
 
-# US GDP ~$31T a year (2026); 342M people, 133M households.
+# US GDP about $31T a year; 342M people, 133M households.
 _Q_GDP_PER_HEAD = 31e12 / 342e6 / 4
-_Q_GDP_PER_HOUSEHOLD = 31e12 / 133e6 / 4
+_Q_GDP_PER_HOUSEHOLD = beta_het.Q_GDP_PER_HOUSEHOLD
 
 
 def _frac_for_dollars(ss, dollars, per):

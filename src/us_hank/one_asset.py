@@ -1,4 +1,5 @@
-"""One-asset HANK (fast variant), same interface as ``us_hank.model``.
+"""One-asset HANK (fast variant), same call signature as ``us_hank.model``
+(its IRFs carry no ``units``, ``tax`` or ``I``).
 
 Uses the blocks of ``sequence_jacobian.examples.hank``, solved on the grid of
 the toolkit's own one-asset notebook (``notebooks/hank.ipynb``: 7 income

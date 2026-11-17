@@ -114,7 +114,7 @@ def solve_steady_state(use_cache: bool = True):
     """Solve the general-equilibrium steady state at production grids.
 
     Calibrates (beta, chi1) to hit the asset-market clearing and liquid-asset
-    (B = 1.04) targets. Slow (tens of seconds at full grids); the result is
+    (B = 1.04) targets. Takes a few seconds at full grids; the result is
     cached at module level.
     """
     if use_cache and 'ss' in _CACHE:

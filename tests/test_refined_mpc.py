@@ -10,12 +10,12 @@ touched.
 """
 import pytest
 
-from us_hank import distributional
+from us_hank import beta_het, distributional
 
 pytestmark = pytest.mark.slow
 
-# US GDP ~$31T a year (2026), 133M households.
-_Q_GDP_PER_HOUSEHOLD = 31e12 / 133e6 / 4
+# US GDP about $31T a year, 133M households (one definition, in beta_het).
+_Q_GDP_PER_HOUSEHOLD = beta_het.Q_GDP_PER_HOUSEHOLD
 
 
 def _frac(ss, dollars):
