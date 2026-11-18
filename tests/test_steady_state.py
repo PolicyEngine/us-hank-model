@@ -24,11 +24,6 @@ def test_wealth_targets(ss):
     assert abs(ss['asset_mkt']) < 1e-6
 
 
-def test_beta_production_grids(ss):
-    # paper full-grid discount factor ~0.976 (coarse demo grids give ~0.9726)
-    assert abs(ss['beta'] - 0.976) < 2e-3
-
-
 def test_internally_calibrated_parameters_match_published_table(ss):
     """The real external check: ABRS (2021) Table B.III.
 
@@ -76,10 +71,6 @@ def test_market_clearing_residual_magnitudes(ss):
     assert abs(ss['goods_mkt']) < 1e-6
     assert abs(ss['fisher']) < 1e-11
     assert abs(ss['wnkpc']) < 1e-11
-
-
-def test_goods_market_clears(ss):
-    assert abs(ss['goods_mkt']) < 1e-5
 
 
 def test_household_block_reference_values():

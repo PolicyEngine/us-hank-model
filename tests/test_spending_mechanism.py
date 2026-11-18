@@ -76,7 +76,7 @@ def test_household_budget_holds_along_the_spending_irf(ss, G_jac):
 def test_output_stays_positive_when_the_tax_does_not_distort_wage_setting(ss,
                                                                           G_jac):
     base = _y(G_jac)
-    assert base[3] < 0  # the published path: negative from q3
+    assert base[3] < 0  # the default path: negative from q3
     neutral = _y(_variant_jacobian(ss, union_tax_neutral,
                                    tax_bar=float(ss['tax'])))
     assert np.all(neutral[:40] > 0)

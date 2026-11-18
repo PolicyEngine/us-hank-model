@@ -93,7 +93,7 @@ from us_hank import distributional as _dist
 MPC_TARGET = 0.20
 MPC_TARGET_DOLLARS_PER_HOUSEHOLD = 1000.0
 
-# US GDP about $31T a year (2026), 133M households: the scale model units
+# US GDP about $31T a year, 133M households: the scale model units
 # (steady-state quarterly Y = 1) are mapped to dollars with.
 Q_GDP_PER_HOUSEHOLD = 31e12 / 133e6 / 4
 
