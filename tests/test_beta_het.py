@@ -282,7 +282,9 @@ def test_docs_wealth_moment_cells_on_the_refined_grid(ss, ss_v, ss_med):
     and poor / all hand-to-mouth (b, a < 0.05), on the refined liquid grid:
     default 0.000 / 12.64 / 0.019 / 0.546, aggregate-target variant
     0.008 / 6.14 / 0.204 / 0.579, median-target variant all hand-to-mouth
-    0.450 and wealthy 0.39 (its other cells are pinned above)."""
+    0.450 and wealthy 0.39 (the wealthy figure is quoted in the comment on
+    beta_het.MEDIAN_CALIBRATION, not in the docs table; the variant's other
+    cells are pinned above)."""
     d = beta_het.wealth_moments(distributional.refined_household_ss(ss))
     assert d['median_liquid_to_income'] == pytest.approx(0.000, abs=5e-4)
     assert d['median_illiquid_to_income'] == pytest.approx(12.64, abs=1e-2)

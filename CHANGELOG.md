@@ -1,7 +1,21 @@
 # Changelog
 
-Versions are the `version` in `pyproject.toml`. No version has been tagged
-on GitHub yet; PolicyEngine Macro pins a commit.
+Versions are the `version` in `pyproject.toml`. `v0.2.0` is tagged at
+`58353e5` (the #19 merge); 0.1.0 was not tagged. PolicyEngine Macro pins a
+commit, not a tag.
+
+## Unreleased
+
+Docs, tests, comments and CI only, after the `v0.2.0` tag; no change to model
+behaviour or results, and `pyproject.toml` still reads 0.2.0.
+- Pointers to README sections that moved to `docs/` corrected; the test
+  named for each claim in `docs/VALIDATION.md` corrected.
+- Pins added for figures the docs quote that no test gated: the real-rate
+  path after the reference monetary shock, a tighter upper bound on the
+  goods-market residual, and the remaining cells of the two tables in
+  `docs/BETA_HET.md`.
+- CI: a job timeout, read-only token permissions, and superseded
+  pull-request runs are cancelled.
 
 ## 0.2.0
 
@@ -44,16 +58,6 @@ Changed
 - The φ gap to Table B.III is explained as a wage-markup convention and
   asserted (#15).
 - README shortened; the long text moved to `docs/` (#11, #19).
-
-Checked after the version was set (docs, tests and CI only)
-- Pointers to README sections that moved to `docs/` corrected; the test
-  named for each claim in `docs/VALIDATION.md` corrected.
-- Pins added for figures the docs quote that no test gated: the real-rate
-  path after the reference monetary shock, a tighter upper bound on the
-  goods-market residual, and the remaining cells of the two tables in
-  `docs/BETA_HET.md`.
-- CI: a job timeout, read-only token permissions, and superseded
-  pull-request runs are cancelled.
 
 ## 0.1.0
 
