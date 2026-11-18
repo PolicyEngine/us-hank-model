@@ -361,6 +361,24 @@ Against the US evidence this is high: Kaplan, Violante & Weidner (2014) put
 total HtM near **one third** of US households, about two thirds of them
 wealthy HtM. `hand_to_mouth_breakdown()` returns the split.
 
+**The 54% counts liquid wealth, not spending behaviour.** It is a
+liquid-wealth definition in the spirit of Kaplan, Violante & Weidner, and in
+this calibration its members are not high spenders, so do not read it as the
+share of households with high MPCs. 52 of the 54 points are households with
+illiquid wealth above the same 0.05 cutoff. The illiquid adjustment cost has zero marginal cost
+at zero adjustment, so these households absorb a windfall mainly by
+withdrawing less: about 75% of a $1,000 rebate goes to the illiquid account
+and 14% is consumed (`windfall_allocation()`). 1.9% of households are
+below the cutoff in both assets (poor hand-to-mouth). `summary()` also returns
+`high_mpc_share`, the population share whose MPC out of the same windfall
+exceeds 0.25. It is 0.0 at the 25% default windfall. On the refined liquid
+grid it is 4.9% / 3.1% / 2.1% at $500 / $1,000 / $1,500 per household, while
+46% of households have an MPC above 0.1 at $1,000; both are converged in the
+liquid grid and pinned in `tests/test_refined_mpc.py`. Read the hand-to-mouth
+share and `high_mpc_share` together. The gap is a property of the ABRS
+calibration, not something this package corrects; the opt-in β-heterogeneity
+variant (`us_hank.beta_het`) is calibrated to a higher rebate MPC.
+
 **MPCs are windfall-size dependent and only partly grid-converged.** The
 consumption policy kinks at the borrowing constraint, where over half the
 population sits, and nB=50 does not resolve that kink. The legacy

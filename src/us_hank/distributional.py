@@ -397,6 +397,30 @@ def _shift_along_b(pol, b_grid, w):
     return out
 
 
+HIGH_MPC_THRESHOLD = 0.25
+
+
+def high_mpc_share(ss, windfall_frac: float | None = DEFAULT_WINDFALL_FRAC,
+                   threshold: float = HIGH_MPC_THRESHOLD) -> dict:
+    """Population share whose quarterly MPC out of the windfall exceeds
+    ``threshold`` -- a behavioural count, unlike ``hand_to_mouth_share``,
+    which counts households by liquid wealth.
+
+    The two differ sharply in this calibration: about 54% of households hold
+    (almost) no liquid assets, but most of them hold illiquid wealth and,
+    because the portfolio adjustment cost has zero marginal cost at zero
+    adjustment, absorb a windfall mainly by withdrawing less from the
+    illiquid account. The answer depends on the windfall size, so it is
+    returned with it.
+    """
+    mpc, D, _ = mpc_liquid(ss, windfall_frac)
+    return {
+        'share': float(D[mpc > threshold].sum()),
+        'mpc_threshold': float(threshold),
+        'windfall_frac_of_quarterly_income': windfall_frac,
+    }
+
+
 def summary(ss, windfall_frac: float | None = DEFAULT_WINDFALL_FRAC) -> dict:
     """Steady-state distributional statistics, each labelled with its convention.
 
@@ -404,6 +428,11 @@ def summary(ss, windfall_frac: float | None = DEFAULT_WINDFALL_FRAC) -> dict:
     a small windfall is not grid-converged at production grids (see
     ``mpc_liquid``). The hand-to-mouth count carries its threshold and the
     share exactly at the constraint that drives it.
+
+    ``hand_to_mouth_share`` is a liquid-wealth count (in the spirit of
+    Kaplan, Violante and Weidner 2014), not a count of high-MPC households:
+    ``high_mpc_share`` is that, and in this calibration it is far smaller.
+    Read the two together.
     """
     htm = hand_to_mouth_breakdown(ss)
     income = mean_quarterly_labour_income(ss)
@@ -416,4 +445,5 @@ def summary(ss, windfall_frac: float | None = DEFAULT_WINDFALL_FRAC) -> dict:
                                      else windfall_frac * income),
         'mean_quarterly_labour_income': income,
         'hand_to_mouth_breakdown': htm,
+        'high_mpc_share': high_mpc_share(ss, windfall_frac),
     }

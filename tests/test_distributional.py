@@ -161,12 +161,37 @@ def test_summary_keys(ss):
         'aggregate_quarterly_mpc_liquid', 'mpc_by_liquid_quartile',
         'hand_to_mouth_share', 'mpc_windfall_frac_of_quarterly_income',
         'mpc_windfall_model_units', 'mean_quarterly_labour_income',
-        'hand_to_mouth_breakdown',
+        'hand_to_mouth_breakdown', 'high_mpc_share',
     }
     # the MPC never travels without the windfall it was measured at
     assert s['mpc_windfall_frac_of_quarterly_income'] == 0.25
     assert s['mpc_windfall_model_units'] == pytest.approx(
         0.25 * s['mean_quarterly_labour_income'])
+
+
+def test_hand_to_mouth_split_adds_up(ss):
+    """Poor + wealthy hand-to-mouth is the reported share, exactly."""
+    h = distributional.summary(ss)['hand_to_mouth_breakdown']
+    assert (h['poor_hand_to_mouth_share'] + h['wealthy_hand_to_mouth_share']
+            == pytest.approx(h['hand_to_mouth_share'], abs=1e-10))
+    assert h['hand_to_mouth_share'] == distributional.summary(
+        ss)['hand_to_mouth_share']
+
+
+def test_hand_to_mouth_by_liquid_wealth_is_not_high_mpc(ss):
+    """The 54% liquid-wealth count is not a count of high spenders. Measured
+    16 Nov 2026: share with MPC > 0.25 is 0.0 at the 25% windfall and 0.015
+    at the one-grid-step difference, against a hand-to-mouth share of 0.537.
+    The pins are two-sided so a calibration change that moved either would
+    show."""
+    s = distributional.summary(ss)
+    hi = s['high_mpc_share']
+    assert hi['windfall_frac_of_quarterly_income'] == 0.25
+    assert hi['mpc_threshold'] == 0.25
+    assert hi['share'] < 0.005
+    grid = distributional.high_mpc_share(ss, windfall_frac=None)['share']
+    assert grid == pytest.approx(0.0148, abs=3e-3)
+    assert s['hand_to_mouth_share'] > 30 * max(grid, 1e-3)
 
 
 def test_default_mpc_is_pinned(ss):
