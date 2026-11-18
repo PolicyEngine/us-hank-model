@@ -15,8 +15,8 @@ rejects the quarterly reading by a wide margin.
 Measured locally on 16 Nov 2026 (production grids, T=300, sequence-jacobian
 1.0.0): linear 1.485 (+1.7%), nonlinear 1.388 (+2.1%), ratio 0.935 against
 0.932, 5 x nonlinear(-1pp) 1.467. Part of the linear gap is the wage-markup
-convention (see README, "phi and the wage-markup convention"): with
-kappaw x muw**2, the paper-era form, the linear response is 1.468.
+convention (see docs/VALIDATION.md, "phi and the wage-markup convention"):
+with kappaw x muw**2, the paper-era form, the linear response is 1.468.
 
 Only consumption on impact to this one shock is compared. Output,
 investment, inflation and fiscal responses have no published magnitude.

@@ -6,10 +6,23 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# A newer push to the same pull request supersedes the run in progress. Runs
+# on main are never cancelled: each one sends the MacroMod dispatch below.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
 jobs:
   tests:
     name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    # Whole job: install about 20 seconds, fast tests about 1 minute, slow
+    # suite 3 to 6 minutes. Without this a hung install or fast test would
+    # run to the 6-hour default.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -37,6 +50,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: tests
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Trigger MacroMod redeploy
         run: |

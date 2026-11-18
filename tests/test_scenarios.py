@@ -192,7 +192,7 @@ def test_impact_real_rate_is_the_inflation_surprise(ss, G_jac, kind, size,
 
 
 def test_spending_tax_path_and_multiplier_are_pinned(ss, G_jac):
-    """README figures for a 1%-of-GDP G shock, rho=0.8.
+    """docs/SHOCKS.md figures for a 1%-of-GDP G shock, rho=0.8.
 
     The tax rate rises only 0.51pp on impact, not the ~1.5pp that dG/(wN)
     alone would need, because the impact ex-post real rate falls 0.21pp and
@@ -220,8 +220,15 @@ def test_monetary_reference_shock_is_pinned(ss, G_jac):
     # because the rule answers the inflation the cut causes:
     # -0.25 + 1.5 * 0.079 = -0.132pp on impact (SHOCK_UNITS says 13bp)
     dx = -0.0025 * 0.61 ** np.arange(T)
-    assert 100 * (G_jac['i']['rstar'] @ dx)[0] == pytest.approx(-0.1316,
-                                                                abs=2e-3)
+    i = 100 * (G_jac['i']['rstar'] @ dx)
+    assert i[0] == pytest.approx(-0.1316, abs=2e-3)
+    # docs/SHOCKS.md, "Output units and r": the ex-post real return falls
+    # 0.08pp on impact and 0.18pp in quarter 1, and the ex-ante real rate
+    # i_0 - pi_1 falls 0.18pp on impact. The bounds are the rounding
+    # half-width of the two-decimal figures the docs quote.
+    assert irf['r'][0] == pytest.approx(-0.08, abs=5e-3)
+    assert irf['r'][1] == pytest.approx(-0.18, abs=5e-3)
+    assert i[0] - irf['pi'][1] == pytest.approx(-0.18, abs=5e-3)
 
 
 @pytest.mark.parametrize('kind,size,rho', CASES)

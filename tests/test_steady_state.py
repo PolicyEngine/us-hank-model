@@ -69,6 +69,10 @@ def test_market_clearing_residual_magnitudes(ss):
     """
     assert abs(ss['asset_mkt']) < 1e-11
     assert abs(ss['goods_mkt']) < 1e-6
+    # docs/VALIDATION.md quotes 3.3e-08: bound it within a factor of three
+    # above, so the quoted figure cannot get ten times worse unnoticed. No
+    # lower bound: a more accurate solve must not fail the suite.
+    assert abs(ss['goods_mkt']) < 1e-7
     assert abs(ss['fisher']) < 1e-11
     assert abs(ss['wnkpc']) < 1e-11
 
