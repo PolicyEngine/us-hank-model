@@ -254,3 +254,45 @@ def test_median_calibration_spending_multiplier_stays_positive(ss_med, G_med):
         assert (r['Y'][:40] > 0).all()
     m = model.shock('monetary', -0.0025, 0.61, ss=ss_med, G_jac=G_med)
     assert m['Y'][0] == pytest.approx(0.360, abs=2e-3)
+
+
+# --- docs/BETA_HET.md table cells not pinned above (slow) ---------------------
+# Each bound is about the last printed digit of the figure in the docs, so a
+# cell that moves by more than that digit fails. Added 18 Nov 2026; the
+# figures are the docs' own (CI runs 42145287339 and 42150783547).
+
+
+@pytest.mark.slow
+def test_docs_monetary_consumption_and_investment_cells(ss_v, G_v, ss_med,
+                                                        G_med):
+    """Monetary -25bp/q, rho 0.61, impact C / I (%): 0.308 / 0.478 on the
+    aggregate-target variant and 0.240 / 1.191 on the median-target one
+    (default 0.300 / 1.698, pinned in test_scenarios.py)."""
+    v = model.shock('monetary', -0.0025, 0.61, ss=ss_v, G_jac=G_v)
+    assert v['C'][0] == pytest.approx(0.308, abs=1e-3)
+    assert v['I'][0] == pytest.approx(0.478, abs=1e-3)
+    m = model.shock('monetary', -0.0025, 0.61, ss=ss_med, G_jac=G_med)
+    assert m['C'][0] == pytest.approx(0.240, abs=1e-3)
+    assert m['I'][0] == pytest.approx(1.191, abs=1e-3)
+
+
+@pytest.mark.slow
+def test_docs_wealth_moment_cells_on_the_refined_grid(ss, ss_v, ss_med):
+    """Median liquid and illiquid wealth over mean quarterly labour income,
+    and poor / all hand-to-mouth (b, a < 0.05), on the refined liquid grid:
+    default 0.000 / 12.64 / 0.019 / 0.546, aggregate-target variant
+    0.008 / 6.14 / 0.204 / 0.579, median-target variant all hand-to-mouth
+    0.450 and wealthy 0.39 (its other cells are pinned above)."""
+    d = beta_het.wealth_moments(distributional.refined_household_ss(ss))
+    assert d['median_liquid_to_income'] == pytest.approx(0.000, abs=5e-4)
+    assert d['median_illiquid_to_income'] == pytest.approx(12.64, abs=1e-2)
+    assert d['poor_htm'] == pytest.approx(0.019, abs=1e-3)
+    assert d['htm'] == pytest.approx(0.546, abs=1e-3)
+    v = beta_het.wealth_moments(beta_het.refined_household_ss(ss_v))
+    assert v['median_liquid_to_income'] == pytest.approx(0.008, abs=1e-3)
+    assert v['median_illiquid_to_income'] == pytest.approx(6.14, abs=1e-2)
+    assert v['poor_htm'] == pytest.approx(0.204, abs=1e-3)
+    assert v['htm'] == pytest.approx(0.579, abs=1e-3)
+    m = beta_het.wealth_moments(beta_het.refined_household_ss(ss_med))
+    assert m['htm'] == pytest.approx(0.450, abs=1e-3)
+    assert m['wealthy_htm'] == pytest.approx(0.39, abs=5e-3)

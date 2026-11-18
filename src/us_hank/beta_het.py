@@ -162,8 +162,8 @@ HTM_CUTOFF = 0.05
 #: support is 0.932-0.998; the top type's beta * (1 + r) is 0.9998. Fits,
 #: refined grid: median liquid 0.205 (target 0.199), median illiquid 4.69
 #: (4.14), poor HtM 0.060 (0.12), wealthy HtM 0.39 (0.19), MPC out of $500
-#: 0.126 (0.15-0.25; ~0.10 at the KV-comparable $1,460, see README). Poor
-#: HtM and the MPC MISS. With A + B = 14 kept, a wider spread (0.034) or a
+#: 0.126 (0.15-0.25; ~0.10 at the KV-comparable $1,460, see
+#: docs/BETA_HET.md). Poor HtM and the MPC MISS. With A + B = 14 kept, a wider spread (0.034) or a
 #: fourth, more impatient type at 12-15% mass gave no root for the centre
 #: beta inside ``beta_bracket`` (most patient type >= 1e-4 below
 #: 1 / (1 + r)). That is a bracket result, not proof that no steady state

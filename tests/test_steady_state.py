@@ -69,6 +69,9 @@ def test_market_clearing_residual_magnitudes(ss):
     """
     assert abs(ss['asset_mkt']) < 1e-11
     assert abs(ss['goods_mkt']) < 1e-6
+    # docs/VALIDATION.md quotes 3.3e-08: check the order of magnitude both
+    # ways, so the quoted figure cannot drift by a factor of ten unnoticed
+    assert 1e-8 < abs(ss['goods_mkt']) < 1e-7
     assert abs(ss['fisher']) < 1e-11
     assert abs(ss['wnkpc']) < 1e-11
 
