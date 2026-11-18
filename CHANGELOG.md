@@ -49,7 +49,7 @@ Checked after the version was set (docs, tests and CI only)
 - Pointers to README sections that moved to `docs/` corrected; the test
   named for each claim in `docs/VALIDATION.md` corrected.
 - Pins added for figures the docs quote that no test gated: the real-rate
-  path after the reference monetary shock, the order of magnitude of the
+  path after the reference monetary shock, a tighter upper bound on the
   goods-market residual, and the remaining cells of the two tables in
   `docs/BETA_HET.md`.
 - CI: a job timeout, read-only token permissions, and superseded
