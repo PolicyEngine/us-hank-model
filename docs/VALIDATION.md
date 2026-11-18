@@ -93,7 +93,7 @@ numbers are first-order" in [SHOCKS.md](SHOCKS.md).
 | φ × μw² matches Table B.III | 2.0733059 | `test_steady_state.py::test_vphi_matches_published_table_in_the_working_paper_convention` | matches a published value (after the convention conversion) |
 | Impact consumption, Fig. 7a shock | 1.485% / 1.388% vs 1.46% / 1.36% | `test_published_magnitude.py` | matches a published value (units inferred) |
 | Z, α, μp, τ match Table B.III | 0.4677898, 0.3299492, 1.0152284, 0.3560606 | `test_steady_state.py` | closed-form in inputs |
-| Goods market clears (untargeted) | 3.3e-08 (gated to its order of magnitude, 1e-8 to 1e-7) | `test_steady_state.py::test_market_clearing_residual_magnitudes` | identity or property test |
+| Goods market clears (untargeted) | 3.3e-08 (gated below 1e-7) | `test_steady_state.py::test_market_clearing_residual_magnitudes` | identity or property test |
 | G is labour-tax financed period by period | 1e-12 | `test_shocks.py::test_fiscal_spending_is_tax_financed_not_deficit_financed` | identity or property test |
 | Linearity, r₀ = −(1 + r)π₀, household budget, ss fixed point | — | `test_shocks.py` (linearity), `test_scenarios.py`, `test_spending_mechanism.py` | identity or property test |
 | Monetary reference shock: Y / C / I / π / i on impact | 0.493 / 0.300 / 1.698 / 0.079 / −0.132 | `test_scenarios.py::test_monetary_reference_shock_is_pinned` | regression pin, no external benchmark |
