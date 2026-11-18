@@ -216,6 +216,12 @@ def test_monetary_reference_shock_is_pinned(ss, G_jac):
     assert irf['I'][0] == pytest.approx(1.6976, abs=1e-2)
     assert irf['pi'][0] == pytest.approx(0.0789, abs=1e-3)
     assert irf['tax'][0] == pytest.approx(-0.6331, abs=5e-3)
+    # size moves the rule's intercept; the nominal policy rate falls less,
+    # because the rule answers the inflation the cut causes:
+    # -0.25 + 1.5 * 0.079 = -0.132pp on impact (SHOCK_UNITS says 13bp)
+    dx = -0.0025 * 0.61 ** np.arange(T)
+    assert 100 * (G_jac['i']['rstar'] @ dx)[0] == pytest.approx(-0.1316,
+                                                                abs=2e-3)
 
 
 @pytest.mark.parametrize('kind,size,rho', CASES)
