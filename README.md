@@ -122,7 +122,8 @@ conventions.
 `sequence-jacobian==1.0.0` exactly, with major-version ceilings on NumPy,
 SciPy and Numba (see `pyproject.toml`): the replication asserts published
 parameters to the last digit, so the solver version is part of the result.
-PolicyEngine Macro pins a commit of this repository.
+PolicyEngine Macro pins a commit of this repository. Changes by version:
+[CHANGELOG.md](CHANGELOG.md).
 
 ## License and attribution
 
