@@ -98,6 +98,8 @@ numbers are first-order" in [SHOCKS.md](SHOCKS.md).
 | Linearity, r₀ = −(1 + r)π₀, household budget, ss fixed point | — | `test_shocks.py` (linearity), `test_scenarios.py`, `test_spending_mechanism.py` | identity or property test |
 | Monetary reference shock: Y / C / I / π / i on impact | 0.493 / 0.300 / 1.698 / 0.079 / −0.132 | `test_scenarios.py::test_monetary_reference_shock_is_pinned` | regression pin, no external benchmark |
 | Spending multipliers (ρ 0.8 / 0.9), nonlinear 0.251 | 0.175 / 0.075 | `test_scenarios.py` | regression pin, no external benchmark |
+| `size` is the intercept of the quarterly rule; `pi`, `r` are quarterly rates; `labour_income_post_tax` is the % change in (1 − tax)·w·N | 1e-12; 1e-9; 1e-10 | `test_units.py` | identity or property test |
+| Post-tax against pre-tax wage bill: G +1% of GDP (ρ 0.8) on impact; reference easing on impact | −0.48% against +0.31% (opposite signs for 28 quarters); +1.81% against +0.83% | `test_units.py` | regression pin, no external benchmark |
 | MPCs, hand-to-mouth, high-MPC share | 0.058; 0.104 / 0.091 / 0.083; 0.537; 3.1% at $1,000 | `test_distributional.py`, `test_refined_mpc.py` | regression pin, no external benchmark |
 | β-het table rows (both tables in [BETA_HET.md](BETA_HET.md)) | see [BETA_HET.md](BETA_HET.md) | `test_beta_het.py` | regression pin, no external benchmark |
 | β-het sensitivity; median-mode bracket; Bh = 0.5 recalibration; 2%-of-GDP non-convergence | — | none | measured once, not gated |

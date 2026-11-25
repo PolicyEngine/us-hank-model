@@ -1,5 +1,6 @@
 """One-asset HANK (fast variant), same call signature as ``us_hank.model``
-(its IRFs carry no ``tax`` or ``I``).
+(its IRFs carry no ``I``, ``tax``, ``w``, ``N``, ``i`` or
+``labour_income_post_tax``: there is no capital and no labour tax rate here).
 
 Uses the blocks of ``sequence_jacobian.examples.hank``, solved on the grid of
 the toolkit's own one-asset notebook (``notebooks/hank.ipynb``: 7 income

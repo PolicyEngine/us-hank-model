@@ -196,7 +196,10 @@ def test_spending_rise_lowers_post_tax_labour_income(ss, G_jac):
     assert pre[0] == pytest.approx(0.313, abs=3e-3)
     assert post[0] == pytest.approx(-0.475, abs=5e-3)
     assert post[1] == pytest.approx(-2.166, abs=1e-2)
-    assert (pre[:12] > 0).all() and (post[:12] < 0).all()
+    # Opposite signs for the first 28 quarters: the pre-tax series turns
+    # negative in quarter 28, the post-tax one positive in quarter 63.
+    assert int(np.argmax(pre <= 0)) == 28 and (pre[:28] > 0).all()
+    assert int(np.argmax(post >= 0)) == 63 and (post[:63] < 0).all()
     # Over 20 quarters: +2.1 percent-quarters before tax, -12.9 after.
     assert pre[:20].sum() == pytest.approx(2.13, abs=0.03)
     assert post[:20].sum() == pytest.approx(-12.94, abs=0.1)
