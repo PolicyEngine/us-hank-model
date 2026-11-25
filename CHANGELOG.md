@@ -27,6 +27,10 @@ Added
 - `one_asset.SHOCK_UNITS`, and a `units` string in every one-asset impulse
   response. In that variant `Z` is 1, so `0.01` on `productivity` is a 1% TFP
   shock, not 2.14%.
+- `model.shock()` returns `w`, `N`, `i` and `labour_income_post_tax`, the
+  first-order % change in `(1 − tax)·w·N`. After a 1%-of-GDP spending rise
+  (ρ 0.8) the pre-tax wage bill rises 0.31% on impact and the post-tax one
+  falls 0.48%.
 - `tests/test_units.py`: the conversions, that `size` is the intercept of the
   quarterly rule (`i − φ·π = rstar` along the response), and that `pi` and
   `r` are quarterly rates.

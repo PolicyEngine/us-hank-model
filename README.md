@@ -41,6 +41,7 @@ irf['units']           # what `size` meant
 # G shock worth 1% of GDP, persistence 0.8
 irf_g = model.shock('fiscal_spending', 0.01, 0.8, T=300, ss=ss, G_jac=G)
 irf_g['tax']           # the labour tax path that pays for it, in pp
+irf_g['labour_income_post_tax']  # % change in (1 - tax)*w*N: falls, though w*N rises
 
 distributional.summary(ss)             # MPCs (with windfall size), HtM split
 

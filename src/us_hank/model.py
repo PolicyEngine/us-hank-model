@@ -225,6 +225,16 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
                       tax path, period by period, with no deficit. Reading a
                       spending IRF without it invites a deficit-financed
                       interpretation the model cannot produce.
+      'w', 'N'        real wage and hours, % deviations. Their sum is the
+                      first-order % deviation of the PRE-tax wage bill.
+      'i'             nominal policy rate, quarterly, percentage points
+      'labour_income_post_tax'
+                      % deviation of (1 - tax)*w*N, the wage bill after the
+                      labour tax: w + N - tax/(1 - tax_ss), to first order.
+                      It can have the opposite sign to the pre-tax wage bill:
+                      a spending rise lifts w*N and lowers this, because the
+                      tax that pays for it rises more. Use this, not w + N,
+                      for what a shock does to workers' incomes.
       'shock'         the exogenous path in levels
       'shock_input'   name of the driving variable
       'shock_pct_of_ss'  the same path as % of that variable's steady state
@@ -250,4 +260,10 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
         out[v] = 100 * (G_jac[v][inp] @ dx) / ss[v]
     for v in ('pi', 'r', 'tax'):
         out[v] = 100 * (G_jac[v][inp] @ dx)
+    for v in ('w', 'N'):
+        out[v] = 100 * (G_jac[v][inp] @ dx) / ss[v]
+    out['i'] = 100 * (G_jac['i'][inp] @ dx)
+    # First-order % deviation of (1 - tax)*w*N: the wage bill households keep.
+    out['labour_income_post_tax'] = (
+        out['w'] + out['N'] - out['tax'] / (1 - float(ss['tax'])))
     return out

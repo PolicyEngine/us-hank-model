@@ -159,3 +159,53 @@ def test_rate_responses_are_quarterly(ss, G_jac):
     assert irf['r'][0] != pytest.approx(-(1 + 4 * ss['r']) * irf['pi'][0], rel=1e-3)
     # Annualised: inflation +0.32pp, ex-post real return -0.32pp on impact.
     assert 4 * irf['pi'][0] == pytest.approx(0.316, abs=5e-3)
+
+
+@pytest.mark.slow
+def test_post_tax_labour_income_is_the_wage_bill_net_of_the_tax_path(ss, G_jac):
+    """labour_income_post_tax is the first-order % change in (1 - tax)*w*N."""
+    for kind, size, rho in (('fiscal_spending', 0.01, 0.8),
+                            ('monetary', -0.0025, 0.61),
+                            ('productivity', 0.01, 0.9)):
+        irf = model.shock(kind, size, rho, T=T, ss=ss, G_jac=G_jac)
+        dx = irf['shock']
+        inp = irf['shock_input']
+        level = (1 - ss['tax']) * ss['w'] * ss['N']
+        d_level = (-(G_jac['tax'][inp] @ dx) * ss['w'] * ss['N']
+                   + (1 - ss['tax']) * (G_jac['w'][inp] @ dx) * ss['N']
+                   + (1 - ss['tax']) * ss['w'] * (G_jac['N'][inp] @ dx))
+        assert np.allclose(irf['labour_income_post_tax'], 100 * d_level / level,
+                           rtol=0, atol=1e-10)
+        assert np.allclose(irf['i'], 100 * (G_jac['i'][inp] @ dx))
+
+
+@pytest.mark.slow
+def test_spending_rise_lowers_post_tax_labour_income(ss, G_jac):
+    """G +1% of GDP, rho 0.8: the pre-tax wage bill rises 0.31% on impact and
+    the wage bill households keep falls 0.48%, then 2.17% in quarter 1.
+
+    The labour tax pays for the spending (docs/SHOCKS.md), so an incidence
+    calculation that scales earnings by w and N alone and leaves the tax out
+    has the wrong sign for workers for the first 28 quarters
+    (PolicyEngine/macro#214).
+    Regression pins on this implementation, not published values.
+    """
+    irf = model.shock('fiscal_spending', 0.01, 0.8, T=T, ss=ss, G_jac=G_jac)
+    pre = irf['w'] + irf['N']
+    post = irf['labour_income_post_tax']
+    assert pre[0] == pytest.approx(0.313, abs=3e-3)
+    assert post[0] == pytest.approx(-0.475, abs=5e-3)
+    assert post[1] == pytest.approx(-2.166, abs=1e-2)
+    assert (pre[:12] > 0).all() and (post[:12] < 0).all()
+    # Over 20 quarters: +2.1 percent-quarters before tax, -12.9 after.
+    assert pre[:20].sum() == pytest.approx(2.13, abs=0.03)
+    assert post[:20].sum() == pytest.approx(-12.94, abs=0.1)
+
+
+@pytest.mark.slow
+def test_monetary_easing_raises_post_tax_labour_income_by_more(ss, G_jac):
+    """The reference easing lowers debt service, so the labour tax falls
+    0.63pp on impact: +0.83% before tax is +1.81% after."""
+    irf = model.shock('monetary', -0.0025, 0.61, T=T, ss=ss, G_jac=G_jac)
+    assert irf['w'][0] + irf['N'][0] == pytest.approx(0.826, abs=5e-3)
+    assert irf['labour_income_post_tax'][0] == pytest.approx(1.809, abs=1e-2)
