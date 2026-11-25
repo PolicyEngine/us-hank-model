@@ -6,8 +6,10 @@ commit, not a tag.
 
 ## Unreleased
 
-Docs, tests, comments and CI only, after the `v0.2.0` tag; no change to model
-behaviour or results, and `pyproject.toml` still reads 0.2.0.
+After the `v0.2.0` tag; no change to model behaviour or results, and
+`pyproject.toml` still reads 0.2.0.
+
+Docs, tests, comments and CI
 - Pointers to README sections that moved to `docs/` corrected; the test
   named for each claim in `docs/VALIDATION.md` corrected.
 - Pins added for figures the docs quote that no test gated: the real-rate
@@ -16,6 +18,22 @@ behaviour or results, and `pyproject.toml` still reads 0.2.0.
   `docs/BETA_HET.md`.
 - CI: a job timeout, read-only token permissions, and superseded
   pull-request runs are cancelled.
+
+Added
+- `model.annualised_bp`, `model.monetary_size`, `model.size_pct_of_ss` and
+  `model.size_from_pct_of_ss` convert between `size` and annualised basis
+  points or a percentage of the steady state. A comment in `model.py`
+  already pointed to `size_pct_of_ss`, which did not exist.
+- `one_asset.SHOCK_UNITS`, and a `units` string in every one-asset impulse
+  response. In that variant `Z` is 1, so `0.01` on `productivity` is a 1% TFP
+  shock, not 2.14%.
+- `model.shock()` returns `w`, `N`, `i` and `labour_income_post_tax`, the
+  first-order % change in `(1 − tax)·w·N`. After a 1%-of-GDP spending rise
+  (ρ 0.8) the pre-tax wage bill rises 0.31% on impact and the post-tax one
+  falls 0.48%.
+- `tests/test_units.py`: the conversions, that `size` is the intercept of the
+  quarterly rule (`i − φ·π = rstar` along the response), and that `pi` and
+  `r` are quarterly rates.
 
 ## 0.2.0
 

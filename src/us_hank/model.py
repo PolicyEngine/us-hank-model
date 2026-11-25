@@ -59,8 +59,8 @@ SHOCK_KINDS = {
 #                   but note it is a 5% increase in G itself.
 #   productivity    Z_ss = 0.4678, NOT 1. A level change in Z is therefore NOT
 #                   a percentage TFP change: size=0.01 is a 2.14% TFP
-#                   improvement, not 1%. Use ``size_pct_of_ss`` below, or read
-#                   ``shock_pct_of_ss`` off the result, before quoting a
+#                   improvement, not 1%. Use ``size_pct_of_ss()`` below, or
+#                   read ``shock_pct_of_ss`` off the result, before quoting a
 #                   productivity shock as "an x% TFP shock".
 SHOCK_UNITS = {
     'monetary': {
@@ -87,7 +87,52 @@ SHOCK_UNITS = {
     },
 }
 
+#: The model period is a quarter, so rates are quarterly rates.
+PERIODS_PER_YEAR = 4
+
 _CACHE: dict = {}
+
+
+def annualised_bp(size: float) -> float:
+    """A quarterly rate change, in annualised basis points.
+
+    ``size`` for a monetary shock, and the ``pi`` and ``r`` responses divided
+    by 100, are level changes in quarterly rates. The annualised figure is the
+    simple one, four times the quarterly change: ``annualised_bp(-0.0025)`` is
+    -100, and ``annualised_bp(-0.000625)`` is -25.
+    """
+    return 1e4 * PERIODS_PER_YEAR * size
+
+
+def monetary_size(annualised_basis_points: float) -> float:
+    """The monetary ``size`` for a move quoted in annualised basis points.
+
+    ``monetary_size(-25)`` is -0.000625, the intercept cut that a central bank
+    would announce as 25bp. ``size=-0.0025`` is four times that.
+    """
+    return annualised_basis_points / (1e4 * PERIODS_PER_YEAR)
+
+
+def size_pct_of_ss(kind: str, size: float, ss=None) -> float:
+    """``size`` as a percentage of the driving variable's steady-state level.
+
+    ``size_pct_of_ss('productivity', 0.01)`` is 2.14, not 1. For a monetary
+    shock the result is a share of the steady-state quarterly rate (0.0125),
+    which is rarely the number wanted; use ``annualised_bp`` there.
+    """
+    if kind not in SHOCK_KINDS:
+        raise ValueError(f"unknown shock kind {kind!r}; available: "
+                         f"{sorted(SHOCK_KINDS)}")
+    if ss is None:
+        ss = solve_steady_state()
+    return 100 * size / float(ss[SHOCK_KINDS[kind]])
+
+
+def size_from_pct_of_ss(kind: str, pct: float, ss=None) -> float:
+    """The ``size`` that is ``pct`` percent of the driving variable's steady
+    state: ``size_from_pct_of_ss('productivity', 1)`` is 0.00468, a 1% TFP
+    improvement."""
+    return pct / size_pct_of_ss(kind, 1.0, ss=ss)
 
 
 def build_models():
@@ -173,12 +218,23 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
     Returns a dict with:
       'Y', 'C', 'I'   % deviations from steady state
       'pi', 'r'       level deviations of QUARTERLY rates, percentage points
+                      (multiply by 4 for the annualised figure)
       'tax'           labour tax rate, level deviation in percentage points.
                       Included because it is the financing: this DAG has a
                       fixed bond supply Bg, so a G shock is paid for by this
                       tax path, period by period, with no deficit. Reading a
                       spending IRF without it invites a deficit-financed
                       interpretation the model cannot produce.
+      'w', 'N'        real wage and hours, % deviations. Their sum is the
+                      first-order % deviation of the PRE-tax wage bill.
+      'i'             nominal policy rate, quarterly, percentage points
+      'labour_income_post_tax'
+                      % deviation of (1 - tax)*w*N, the wage bill after the
+                      labour tax: w + N - tax/(1 - tax_ss), to first order.
+                      It can have the opposite sign to the pre-tax wage bill:
+                      a spending rise lifts w*N and lowers this, because the
+                      tax that pays for it rises more. Use this, not w + N,
+                      for what a shock does to workers' incomes.
       'shock'         the exogenous path in levels
       'shock_input'   name of the driving variable
       'shock_pct_of_ss'  the same path as % of that variable's steady state
@@ -204,4 +260,10 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
         out[v] = 100 * (G_jac[v][inp] @ dx) / ss[v]
     for v in ('pi', 'r', 'tax'):
         out[v] = 100 * (G_jac[v][inp] @ dx)
+    for v in ('w', 'N'):
+        out[v] = 100 * (G_jac[v][inp] @ dx) / ss[v]
+    out['i'] = 100 * (G_jac['i'][inp] @ dx)
+    # First-order % deviation of (1 - tax)*w*N: the wage bill households keep.
+    out['labour_income_post_tax'] = (
+        out['w'] + out['N'] - out['tax'] / (1 - float(ss['tax'])))
     return out
