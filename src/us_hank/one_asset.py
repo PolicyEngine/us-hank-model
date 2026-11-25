@@ -1,5 +1,5 @@
 """One-asset HANK (fast variant), same call signature as ``us_hank.model``
-(its IRFs carry no ``units``, ``tax`` or ``I``).
+(its IRFs carry no ``tax`` or ``I``).
 
 Uses the blocks of ``sequence_jacobian.examples.hank``, solved on the grid of
 the toolkit's own one-asset notebook (``notebooks/hank.ipynb``: 7 income
@@ -35,6 +35,40 @@ TARGETS = ['asset_mkt', 'goods_mkt', 'nkpc_res']
 EXOGENOUS = ['rstar', 'Z']
 
 SHOCK_KINDS = {'monetary': 'rstar', 'productivity': 'Z'}
+
+# ``size`` is a level change in the driving variable, as in ``us_hank.model``.
+# Two steady-state levels differ from the two-asset model, so the same
+# ``size`` does not always mean the same thing in both:
+#
+#   monetary      rstar_ss = 0.005 a quarter (2% a year; 0.0125, 5% a year, in
+#                 the two-asset model). The rule is lagged one quarter and
+#                 written for the real return: 1 + r_t = (1 + rstar_{t-1} +
+#                 phi*pi_{t-1}) / (1 + pi_t). ``size`` is in the same unit as
+#                 in the two-asset model (-0.0025 is 25bp a quarter, about
+#                 100bp annualised), but the intercept reaches the nominal
+#                 rate one quarter later.
+#   productivity  Z_ss = 1, so here a level change IS a percentage change:
+#                 size=0.01 is a 1% TFP improvement (2.14% in the two-asset
+#                 model, where Z_ss = 0.468).
+SHOCK_UNITS = {
+    'monetary': {
+        'input': 'rstar',
+        'units': 'level change in the intercept of the quarterly Taylor rule, '
+                 '1 + r_t = (1 + rstar_{t-1} + phi*pi_{t-1}) / (1 + pi_t) '
+                 '(-0.0025 = a 25bp-per-quarter cut in the intercept, about '
+                 '100bp annualised; -0.000625 = 25bp annualised). The rule is '
+                 'lagged: the intercept sets the nominal rate between this '
+                 'quarter and the next',
+        'level_equals_pct_of_ss': False,
+    },
+    'productivity': {
+        'input': 'Z',
+        'units': 'level change in TFP around Z_ss = 1, so 0.01 is a 1% TFP '
+                 'improvement (the two-asset model has Z_ss = 0.468, where '
+                 '0.01 is 2.14%)',
+        'level_equals_pct_of_ss': True,
+    },
+}
 
 _CACHE: dict = {}
 
@@ -84,7 +118,8 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
 
     ``size`` is a level change in the driving variable, as in
     ``us_hank.model.shock``; ``shock_pct_of_ss`` reports it as a share of that
-    variable's steady state. This DAG's Z_ss differs from the two-asset one,
+    variable's steady state and ``units`` says what ``size`` meant (see
+    ``SHOCK_UNITS``). This DAG's Z_ss is 1 and the two-asset one's is 0.468,
     so the same ``size`` is a different percentage TFP shock in each.
     """
     if kind not in SHOCK_KINDS:
@@ -98,7 +133,8 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
     inp = SHOCK_KINDS[kind]
     dx = size * persistence ** np.arange(T)
     out = {'shock': dx, 'shock_input': inp,
-           'shock_pct_of_ss': 100 * dx / float(ss[inp])}
+           'shock_pct_of_ss': 100 * dx / float(ss[inp]),
+           'units': SHOCK_UNITS[kind]['units']}
     for v in ('Y', 'C'):
         out[v] = 100 * (G_jac[v][inp] @ dx) / ss[v]
     for v in ('pi', 'r'):

@@ -28,7 +28,23 @@ the rule reacts to the higher inflation: 0.13pp on impact for the
 
 Every IRF returns `shock_pct_of_ss` and a `units` string, and
 `model.SHOCK_UNITS` carries the same metadata, so no caller needs to hard-code
-a units description. Describing `size=0.01` on `productivity` as "a 1% TFP
+a units description. Four helpers do the conversions
+(`tests/test_units.py`):
+
+```python
+model.monetary_size(-25)                       # -0.000625: a 25bp annualised cut
+model.annualised_bp(-0.0025)                   # -100.0
+model.size_pct_of_ss('productivity', 0.01)     # 2.14 (% of Z_ss)
+model.size_from_pct_of_ss('productivity', 1)   # 0.00468: a 1% TFP improvement
+```
+
+The one-asset variant has different steady-state levels, and
+`one_asset.SHOCK_UNITS` states them: `Z` is 1 there, so `0.01` on
+`productivity` **is** a 1% TFP improvement, and the steady-state rate is 0.5%
+a quarter (2% a year) against 1.25% (5% a year). A monetary `size` is the
+same number of basis points in both. The one-asset rule is lagged a quarter,
+`1 + r_t = (1 + rstar_{t−1} + φ·π_{t−1})/(1 + π_t)`, so the intercept reaches
+the real return in quarter 1. Describing `size=0.01` on `productivity` as "a 1% TFP
 shock" is wrong by more than a factor of two.
 
 ## G shocks are tax-financed, and the IRF shows it
@@ -87,7 +103,9 @@ in `tests/test_scenarios.py`
 ## Output units and `r`
 
 Units: `Y`, `C`, `I` are % deviations from steady state; `pi`, `r` and `tax`
-are quarterly-rate/rate deviations in percentage points. `size` is always a
+are quarterly-rate/rate deviations in percentage points. Multiply `pi` and `r`
+by 4 for annualised figures: the −25bp-per-quarter example raises inflation by
+0.08pp a quarter on impact, 0.32pp annualised. `size` is always a
 LEVEL change in the driving variable — see the table above.
 
 `r` is the ex-post real
