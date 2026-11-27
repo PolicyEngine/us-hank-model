@@ -98,6 +98,27 @@ def test_size_pct_of_ss_rejects_an_unknown_kind():
         model.size_pct_of_ss('transfer', 0.01, ss={})
 
 
+def test_one_asset_persistent_easing_also_raises_the_nominal_rate():
+    """The same sign flip in the one-asset variant, at a lower persistence.
+    Its rule is lagged, so the nominal rate set on impact is
+    rstar_0 + phi*pi_0 (the identity pinned in
+    test_one_asset_rule_is_lagged_one_quarter). For a -0.0025 intercept cut
+    that is negative at persistence 0.5, crosses zero just below 0.6 and is
+    +0.39pp at 0.9, while output rises throughout."""
+    phi = one_asset.PRODUCTION_CALIBRATION['phi']
+
+    def run(rho):
+        irf = one_asset.shock('monetary', -0.0025, rho)
+        return -0.25 + phi * irf['pi'][0], irf['Y'][0]
+
+    (i_50, y_50), (i_55, _), (i_60, _), (i_90, y_90) = (
+        run(rho) for rho in (0.5, 0.55, 0.6, 0.9))
+    assert i_50 == pytest.approx(-0.053, abs=2e-3)
+    assert i_55 < 0 < i_60
+    assert i_90 == pytest.approx(0.386, abs=2e-3)
+    assert y_50 > 0 and y_90 > 0
+
+
 # --- slow: the two-asset model at production grids ---------------------------
 
 @pytest.mark.slow
@@ -212,3 +233,70 @@ def test_monetary_easing_raises_post_tax_labour_income_by_more(ss, G_jac):
     irf = model.shock('monetary', -0.0025, 0.61, T=T, ss=ss, G_jac=G_jac)
     assert irf['w'][0] + irf['N'][0] == pytest.approx(0.826, abs=5e-3)
     assert irf['labour_income_post_tax'][0] == pytest.approx(1.809, abs=1e-2)
+
+
+# --- a persistent easing raises the policy rate (slow) ------------------------
+
+@pytest.mark.slow
+def test_persistent_easing_raises_the_policy_rate_on_impact(ss, G_jac):
+    """size=-0.0025 is a cut in the rule's INTERCEPT. Whether the policy rate
+    falls depends on the persistence, because i_0 = size + phi*pi_0 and a more
+    persistent cut raises inflation more.
+
+    At 0.61 the policy rate falls 0.13pp a quarter on impact. At 0.9, the
+    default persistence in PolicyEngine Macro, it RISES 0.25pp a quarter
+    (about +1pp annualised) and stays above steady state. This documents the
+    behaviour; it is a property of the model with this rule, not a bug, and
+    these are regression pins, not published values.
+    """
+    phi = float(ss['phi'])
+    lo = model.shock('monetary', -0.0025, 0.61, T=T, ss=ss, G_jac=G_jac)
+    hi = model.shock('monetary', -0.0025, 0.9, T=T, ss=ss, G_jac=G_jac)
+
+    assert lo['i'][0] == pytest.approx(-0.132, abs=2e-3)
+    assert hi['i'][0] == pytest.approx(0.253, abs=2e-3)
+    assert model.annualised_bp(hi['i'][0] / 100) == pytest.approx(101.4, abs=1)
+    # The rule, on impact: the cut is -0.25pp, inflation does the rest.
+    for irf in (lo, hi):
+        assert irf['i'][0] == pytest.approx(-0.25 + phi * irf['pi'][0],
+                                            abs=1e-10)
+    assert hi['pi'][0] == pytest.approx(0.336, abs=2e-3)
+    # Above steady state for the first 100 quarters, peaking in quarter 1.
+    assert (hi['i'][:100] > 0).all()
+    assert int(np.argmax(hi['i'])) == 1
+
+
+@pytest.mark.slow
+def test_persistent_easing_is_still_an_easing(ss, G_jac):
+    """At persistence 0.9 the policy rate rises, but the ex-ante real rate
+    i_t - pi_{t+1} falls and output, consumption and investment rise. The
+    sign of ``size`` gives the direction of the stance; the sign of ``i``
+    does not."""
+    hi = model.shock('monetary', -0.0025, 0.9, T=T, ss=ss, G_jac=G_jac)
+    ex_ante = hi['i'][:-1] - hi['pi'][1:]
+    assert ex_ante[0] == pytest.approx(-0.067, abs=2e-3)
+    assert (ex_ante[:20] < 0).all()
+    assert hi['r'][0] == pytest.approx(-0.340, abs=2e-3)
+    assert hi['Y'][0] == pytest.approx(0.361, abs=2e-3)
+    assert hi['C'][0] == pytest.approx(0.253, abs=2e-3)
+    assert (hi['Y'][:20] > 0).all() and (hi['C'][:20] > 0).all()
+    assert hi['I'][0] > 0
+
+
+@pytest.mark.slow
+def test_policy_rate_sign_flips_at_a_persistence_near_three_quarters(ss, G_jac):
+    """The impact response of i to an intercept cut changes sign between
+    persistence 0.75 and 0.76 (0.752 by root-finding on 26 Nov 2026)."""
+    def i0(rho):
+        return model.shock('monetary', -0.0025, rho, T=T, ss=ss,
+                           G_jac=G_jac)['i'][0]
+    assert i0(0.75) < 0 < i0(0.76)
+    # Monotone in between the two documented cases.
+    grid = [i0(rho) for rho in (0.61, 0.7, 0.75, 0.76, 0.8, 0.9)]
+    assert all(a < b for a, b in zip(grid, grid[1:]))
+
+
+def test_the_units_string_warns_about_the_sign_of_the_policy_rate():
+    units = ' '.join(model.SHOCK_UNITS['monetary']['units'].split())
+    assert 'RAISES the policy rate' in units
+    assert 'persistence above about 0.75' in units

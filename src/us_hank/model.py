@@ -54,6 +54,16 @@ SHOCK_KINDS = {
 #                   size=-0.000625. The policy rate i itself moves less,
 #                   because the rule responds to the inflation the shock
 #                   causes: -13bp on impact for size=-0.0025, rho 0.61.
+#                   WARNING: the sign of the policy-rate response depends
+#                   on the persistence. Above a persistence of about 0.75 an
+#                   intercept CUT raises the policy rate on impact: at 0.9
+#                   (PolicyEngine Macro's default) size=-0.0025 gives
+#                   i = +0.25pp a quarter, about +1pp annualised, because
+#                   inflation rises 0.34pp and phi*pi outweighs the cut. It
+#                   is still an easing: the ex-ante real rate falls and Y and
+#                   C rise. Do not describe it as "a 25bp rate cut"; read the
+#                   returned ``i``. See docs/SHOCKS.md, "A monetary easing
+#                   can raise the policy rate".
 #   fiscal_spending G_ss = 0.2, and Y_ss = 1, so a level change in G is also a
 #                   share of quarterly GDP: size=0.01 is 1% of GDP. Natural --
 #                   but note it is a 5% increase in G itself.
@@ -70,7 +80,13 @@ SHOCK_UNITS = {
                  'quarter cut in the intercept, about 100bp annualised; '
                  '-0.000625 = 25bp annualised). The policy rate itself moves '
                  'less, because the rule responds to the inflation the shock '
-                 'causes: 13bp on impact for a 25bp cut with persistence 0.61',
+                 'causes: 13bp on impact for a 25bp cut with persistence '
+                 '0.61. With persistence above about 0.75 the policy rate '
+                 'moves the other way on impact: at 0.9 a 25bp-per-quarter '
+                 'cut in the intercept RAISES the policy rate by 0.25pp a '
+                 'quarter, while the ex-ante real rate falls and output '
+                 'rises. Read the returned i before calling a shock a rate '
+                 'cut of a given size',
         'level_equals_pct_of_ss': False,
     },
     'fiscal_spending': {
@@ -209,6 +225,17 @@ def shock(kind: str, size: float, persistence: float, T: int = 300,
     kind: 'monetary' (rstar), 'fiscal_spending' (G) or 'productivity' (Z).
     There is no exogenous transfer or tax-rate instrument in this DAG (see
     the module docstring).
+
+    A monetary ``size`` is a shock to the rule's intercept, not to the policy
+    rate, and the two can have opposite signs. ``i = rstar + phi*pi`` with
+    phi = 1.5, so on impact ``i_0 = size + phi*pi_0``. A persistent cut raises
+    inflation by enough that the policy rate RISES: with size=-0.0025 the
+    impact response of ``i`` is -0.13pp a quarter at persistence 0.61, zero at
+    about 0.752 and +0.25pp a quarter (about +1pp annualised) at 0.9, which is
+    PolicyEngine Macro's default persistence. The shock is still an easing at
+    0.9: the ex-ante real rate ``i_t - pi_{t+1}`` falls 0.07pp and output
+    rises 0.36% on impact. Read ``i`` off the result instead of inferring the
+    policy-rate move from ``size`` (tests/test_units.py, docs/SHOCKS.md).
 
     Responses are first-order: the IRF is a matrix-vector product against a
     fixed Jacobian, so it scales EXACTLY with ``size`` and carries no

@@ -26,6 +26,51 @@ the Taylor coefficient 1.5). The policy rate falls less than `size` because
 the rule reacts to the higher inflation: 0.13pp on impact for the
 −25bp-per-quarter example.
 
+### A monetary easing can raise the policy rate
+
+`size` shocks the intercept of the rule, not the policy rate, and the two can
+have opposite signs. On impact `i_0 = size + φ·π_0`. A more persistent cut
+raises inflation more, and above a persistence of about 0.75 the `φ·π_0` term
+is larger than the cut. For `size = -0.0025` in the two-asset model:
+
+| persistence | policy rate `i`, impact (pp a quarter) | inflation, impact | ex-ante real rate `i_t − π_{t+1}`, impact | output, impact |
+|---|---|---|---|---|
+| 0.61 | −0.13 | +0.08 | −0.18 | +0.49% |
+| 0.75 | −0.00 | +0.16 | −0.13 | +0.51% |
+| 0.9 | **+0.25** | +0.34 | −0.07 | +0.36% |
+
+At 0.9 the policy rate is 0.25pp a quarter higher on impact, about 1pp
+annualised, and it stays above its steady state for the first 100 quarters.
+The sign changes at a persistence of 0.752. PolicyEngine Macro's default
+persistence for monetary and productivity shocks is 0.9, so its default
+"easing" is a case where the policy rate rises.
+
+The shock is still an easing at 0.9. The ex-ante real rate falls, and output,
+consumption and investment rise on impact. What changes is the mix: a
+persistent cut in the intercept works mostly through expected inflation, so
+the nominal rate rises while the real rate falls. This is how a rule of the
+form `i = rstar + φ·π` with no interest-rate smoothing behaves when the
+intercept shock is persistent. It is a property of this model, not a
+statement about how central banks ease.
+
+Two consequences for anyone describing a run:
+
+* Do not call `size = -0.0025` "a 25bp rate cut", or infer the policy-rate
+  move from `size`. Read the returned `i`.
+* To describe a path on which the policy rate falls, use a persistence below
+  0.75. The reference shock in this repo uses 0.61.
+
+The one-asset variant does the same, from a lower persistence. Its rule is
+lagged a quarter, and the nominal rate it sets on impact, `rstar_0 + φ·π_0`,
+is −0.05pp at persistence 0.5, changes sign between 0.55 and 0.6, and is
++0.39pp at 0.9. So in the one-asset variant the reference persistence of 0.61
+is already just past the sign change (+0.01pp). `tests/test_units.py` pins the two-asset figures
+(`test_persistent_easing_raises_the_policy_rate_on_impact`,
+`test_persistent_easing_is_still_an_easing`,
+`test_policy_rate_sign_flips_at_a_persistence_near_three_quarters`) and the
+one-asset sign. The default persistence is not changed here; it is set in
+PolicyEngine Macro, not in this package, where `persistence` has no default.
+
 Every IRF returns `shock_pct_of_ss` and a `units` string, and
 `model.SHOCK_UNITS` carries the same metadata, so no caller needs to hard-code
 a units description. Four helpers do the conversions
