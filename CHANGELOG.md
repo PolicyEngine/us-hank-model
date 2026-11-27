@@ -39,7 +39,7 @@ Added
   persistence 0.61, zero at about 0.752 and +0.25pp a quarter at 0.9
   (PolicyEngine Macro's default). The ex-ante real rate still falls and
   output rises. The note is in the `model.shock` docstring, the monetary
-  `units` string (which every monetary response returns) and
+  `units` strings of both variants (which every monetary response returns) and
   `docs/SHOCKS.md`; five tests in `tests/test_units.py` pin it. No default
   and no response changes.
 - `tests/test_beta_het.py`: three fast tests run `calibrate_beta_spread` on

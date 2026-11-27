@@ -31,7 +31,8 @@ the rule reacts to the higher inflation: 0.13pp on impact for the
 `size` shocks the intercept of the rule, not the policy rate, and the two can
 have opposite signs. On impact `i_0 = size + φ·π_0`. A more persistent cut
 raises inflation more, and above a persistence of about 0.75 the `φ·π_0` term
-is larger than the cut. For `size = -0.0025` in the two-asset model:
+is larger than the cut. For `size = -0.0025` in the two-asset model (first-order
+responses):
 
 | persistence | policy rate `i`, impact (pp a quarter) | inflation, impact | ex-ante real rate `i_t − π_{t+1}`, impact | output, impact |
 |---|---|---|---|---|
@@ -58,7 +59,8 @@ Two consequences for anyone describing a run:
 * Do not call `size = -0.0025` "a 25bp rate cut", or infer the policy-rate
   move from `size`. Read the returned `i`.
 * To describe a path on which the policy rate falls, use a persistence below
-  0.75. The reference shock in this repo uses 0.61.
+  0.75 in the two-asset model. The reference shock in this repo uses 0.61.
+  In the one-asset variant the sign change is lower, between 0.55 and 0.6.
 
 The one-asset variant does the same, from a lower persistence. Its rule is
 lagged a quarter, and the nominal rate it sets on impact, `rstar_0 + φ·π_0`,

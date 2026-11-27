@@ -117,6 +117,8 @@ def test_one_asset_persistent_easing_also_raises_the_nominal_rate():
     assert i_55 < 0 < i_60
     assert i_90 == pytest.approx(0.386, abs=2e-3)
     assert y_50 > 0 and y_90 > 0
+    assert 'rises after a cut' in ' '.join(
+        one_asset.SHOCK_UNITS['monetary']['units'].split())
 
 
 # --- slow: the two-asset model at production grids ---------------------------
