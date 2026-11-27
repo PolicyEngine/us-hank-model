@@ -80,6 +80,53 @@ def test_variant_demo_steady_state_clears_markets_and_raises_the_mpc():
             > distributional.aggregate_mpc(one) + 0.01)
 
 
+# --- the spread calibration search, on demo grids ----------------------------
+#
+# ``calibrate_beta_spread`` at production grids takes minutes (the result is
+# stored in BETA_HET_CALIBRATION), so these run it on the demo grids with a
+# short sweep. They test the search, not the calibrated value: the demo-grid
+# MPCs (about 0.07 to 0.13 for spreads of 0.02 to 0.08) are not the model's.
+
+def test_spread_search_brackets_then_refines_to_the_target():
+    """Two sweep points bracket the target, regula falsi refines inside the
+    bracket, and the returned steady state has the MPC the search reports."""
+    target, tol = 0.10, 1e-4
+    spread, ss, path = beta_het.calibrate_beta_spread(
+        target=target, sweep=(0.02, 0.08), tol=tol, log=lambda _: None,
+        **DEMO)
+    assert 0.02 < spread < 0.08
+    assert [p['beta_spread'] for p in path[:2]] == [0.02, 0.08]
+    assert path[0]['mpc'] < target < path[1]['mpc']
+    assert 3 <= len(path) <= 10
+    assert path[-1]['beta_spread'] == spread
+    assert abs(path[-1]['mpc'] - target) < tol
+    # The returned steady state is the one evaluated last, and it clears.
+    assert float(ss['beta_spread']) == spread
+    assert abs(ss['asset_mkt']) < 1e-9 and abs(ss['B'] - 1.04) < 1e-8
+    mpc = beta_het.refined_aggregate_mpc_beta_het(
+        ss, beta_het.rebate_frac(ss, beta_het.MPC_TARGET_DOLLARS_PER_HOUSEHOLD))
+    assert mpc == pytest.approx(path[-1]['mpc'], abs=1e-12)
+    # The MPC rises with the spread along every point the search evaluated.
+    by_spread = sorted(path, key=lambda p: p['beta_spread'])
+    assert all(a['mpc'] < b['mpc'] for a, b in zip(by_spread, by_spread[1:]))
+
+
+def test_spread_search_returns_a_sweep_point_within_tolerance():
+    """A sweep point already within ``tol`` of the target is returned as is,
+    with no refinement."""
+    spread, ss, path = beta_het.calibrate_beta_spread(
+        target=0.0965, sweep=(0.05,), tol=5e-3, log=lambda _: None, **DEMO)
+    assert spread == 0.05 and len(path) == 1
+    assert path[0]['mpc'] == pytest.approx(0.0965, abs=5e-3)
+    assert float(ss['beta_spread']) == 0.05
+
+
+def test_spread_search_raises_when_the_sweep_never_crosses():
+    with pytest.raises(ValueError, match="not reached on the sweep"):
+        beta_het.calibrate_beta_spread(
+            target=0.9, sweep=(0.02,), log=lambda _: None, **DEMO)
+
+
 # --- production grids (slow) --------------------------------------------------
 # Pinned from CI run 42145287339 (r5 diag): impatient type one third of
 # households, beta_L = 0.852 vs patient beta = 0.983.

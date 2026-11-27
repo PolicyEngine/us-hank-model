@@ -59,7 +59,10 @@ SHOCK_UNITS = {
                  '(-0.0025 = a 25bp-per-quarter cut in the intercept, about '
                  '100bp annualised; -0.000625 = 25bp annualised). The rule is '
                  'lagged: the intercept sets the nominal rate between this '
-                 'quarter and the next',
+                 'quarter and the next. That rate, rstar_0 + phi*pi_0, rises '
+                 'after a cut when the persistence is above about 0.6 '
+                 '(+0.39pp a quarter at 0.9 for -0.0025), while output still '
+                 'rises',
         'level_equals_pct_of_ss': False,
     },
     'productivity': {
