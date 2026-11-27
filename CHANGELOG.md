@@ -34,6 +34,18 @@ Added
 - `tests/test_units.py`: the conversions, that `size` is the intercept of the
   quarterly rule (`i − φ·π = rstar` along the response), and that `pi` and
   `r` are quarterly rates.
+- A warning that a persistent monetary easing raises the policy rate. With
+  `size = -0.0025` the impact response of `i` is −0.13pp a quarter at
+  persistence 0.61, zero at about 0.752 and +0.25pp a quarter at 0.9
+  (PolicyEngine Macro's default). The ex-ante real rate still falls and
+  output rises. The note is in the `model.shock` docstring, the monetary
+  `units` string (which every monetary response returns) and
+  `docs/SHOCKS.md`; five tests in `tests/test_units.py` pin it. No default
+  and no response changes.
+- `tests/test_beta_het.py`: three fast tests run `calibrate_beta_spread` on
+  the demo grids with a short sweep (bracket and refine, return on a sweep
+  point, no crossing). The search was untested because it takes minutes at
+  production grids. They add about 13 seconds to the fast suite.
 
 ## 0.2.0
 
