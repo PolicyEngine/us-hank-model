@@ -45,7 +45,7 @@ Added
 - `tests/test_beta_het.py`: three fast tests run `calibrate_beta_spread` on
   the demo grids with a short sweep (bracket and refine, return on a sweep
   point, no crossing). The search was untested because it takes minutes at
-  production grids. They add about 13 seconds to the fast suite.
+  production grids. They add 13 to 27 seconds to the fast suite, depending on machine load.
 
 ## 0.2.0
 
